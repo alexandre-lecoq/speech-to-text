@@ -1,87 +1,125 @@
 # speech-to-text
 
-A simple command-line tool for converting MP3 audio files to text with timestamps.
+A simple, cross-platform command-line tool to transcribe MP3 audio to text using OpenAI Whisper, with optional timestamps, offline model support, GPU acceleration when available, and a diagnostics mode.
 
 ## Features
 
-- Converts MP3 audio files to text transcriptions
-- Supports multiple languages: Chinese, French, and English
-- Outputs text with timestamps for each segment
-- Uses OpenAI's Whisper model for accurate transcription
+- Transcribes MP3 audio files to text
+- Language handling:
+  - Provide a Whisper language code (e.g., `en`, `fr`, `zh`), or
+  - Omit it or use `auto` to auto-detect the language
+- Optional timestamps per segment (`--timestamps`)
+- Deterministic output format with file metadata and language info
+- Uses a local Whisper model file (`./models/base.pt`) for offline use
+- GPU acceleration if a CUDA-enabled PyTorch is available; falls back to CPU
+- Diagnostics mode (`--diagnose`) to print environment info and exit
+
+## Requirements
+
+- Python 3.8+
+- Dependencies from `requirements.txt` (installs Whisper)
+  - PyTorch is required by Whisper and will be installed (CPU by default). For GPU acceleration, install a CUDA-enabled PyTorch build separately following the instructions on pytorch.org.
 
 ## Installation
 
-1. Clone this repository:
+1) Clone this repository
+
 ```bash
 git clone https://github.com/alexandre-lecoq/speech-to-text.git
 cd speech-to-text
 ```
 
-2. Install required dependencies:
+2) Install dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
-Note: The first time you run the tool, it will download the Whisper model (approximately 140 MB).
+3) Obtain the Whisper base model file (one-time)
+
+This tool expects a local model at `./models/base.pt`. Fetch it with:
+
+```bash
+python speech_to_text.py --update-model
+```
+
+This downloads the latest Whisper “base” model (requires internet) and saves it to `./models/base.pt` for offline use.
 
 ## Usage
 
+Basic transcription (language auto-detected):
+
 ```bash
-python speech_to_text.py <language> <mp3_file>
+python speech_to_text.py <mp3_file>
 ```
 
-### Arguments
+Specify language explicitly (Whisper code):
 
-- `language`: The language spoken in the audio file
-  - Supported values: `chinese`, `french`, `english`
-- `mp3_file`: Path to the MP3 audio file you want to transcribe
-
-### Examples
-
-Transcribe an English audio file:
 ```bash
-python speech_to_text.py english audio.mp3
+python speech_to_text.py <mp3_file> <language>
+# Examples: en (English), fr (French), zh (Chinese), auto (auto-detect)
 ```
 
-Transcribe a French audio file:
+Include timestamps per segment:
+
 ```bash
-python speech_to_text.py french presentation.mp3
+python speech_to_text.py <mp3_file> [language] --timestamps
 ```
 
-Transcribe a Chinese audio file:
+Update the local model file (requires internet):
+
 ```bash
-python speech_to_text.py chinese lecture.mp3
+python speech_to_text.py --update-model
+```
+
+Print a diagnostics report and exit:
+
+```bash
+python speech_to_text.py --diagnose
 ```
 
 ## Output
 
-The tool generates a text file with the same name as the input file, with `_transcription.txt` appended. For example:
-- Input: `audio.mp3`
-- Output: `audio_transcription.txt`
+The tool writes a text file alongside your MP3, named `<basename>_transcription.txt`. The format is:
 
-The output file contains:
-- Timestamps for each segment in format `[HH:MM:SS.mmm --> HH:MM:SS.mmm]`
-- The transcribed text for each segment
-
-Example output:
 ```
-Speech to Text Transcription
-==================================================
+filename: <file name>
+file_size: <size in bytes> bytes
+sha1: <sha1 of input file>
 
-[00:00:00.000 --> 00:00:03.500]
-Hello, welcome to this presentation.
+language: <whisper_language_code>
+segments: <number_of_segments>
 
-[00:00:03.500 --> 00:00:07.200]
-Today we will discuss speech recognition technology.
-
-==================================================
-End of transcription
+<content>
 ```
 
-## Requirements
+- When `--timestamps` is used, content is a list of segments:
 
-- Python 3.7 or higher
-- openai-whisper package (installed via requirements.txt)
+```
+[HH:MM:SS.mmm --> HH:MM:SS.mmm]
+<segment text>
+
+[...]
+```
+
+- Without `--timestamps` (default), content is the full transcription text from Whisper (`result['text']`). Whisper may include newlines depending on the audio.
+
+## GPU acceleration (optional)
+
+- If a CUDA-enabled PyTorch is installed and your GPU/driver is compatible, the tool will automatically use `cuda`; otherwise it will fall back to `cpu`. The selected device is printed at runtime.
+- To verify your environment, run the diagnostics:
+
+```bash
+python speech_to_text.py --diagnose
+```
+
+This prints Python/OS info, `nvidia-smi` (if available), `nvcc --version` (if available), PyTorch CUDA status and devices, Whisper version, and whether the local model file is present.
+
+## Notes
+
+- Supported language codes include Whisper’s standard codes, e.g., `en`, `fr`, `zh`. Using `auto` or omitting the language enables auto-detection.
+- The `--update-model` command requires internet connectivity. Normal transcription runs with the local `./models/base.pt` file.
+- Windows is supported. The repository includes unit tests and a small French audio sample for end-to-end validation.
 
 ## License
 

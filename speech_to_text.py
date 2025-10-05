@@ -138,9 +138,11 @@ def write_transcription(result, output_file, audio_file, include_timestamps=Fals
                 f.write(f"[{start_time} --> {end_time}]\n")
                 f.write(f"{text}\n\n")
         else:
-            # Use full text without timestamps (simpler and more efficient)
-            f.write(result.get('text', '').strip())
-            f.write('\n')
+            # No timestamps: write one segment per line (improves readability)
+            for segment in result.get('segments', []):
+                text = str(segment.get('text', '')).strip()
+                if text:
+                    f.write(text + "\n")
 
 
 def diagnose():

@@ -5,8 +5,9 @@ Speech to Text Command Line Tool
 This tool converts MP3 audio files to text with timestamps.
 It supports Chinese, French, and English languages.
 
+
 Usage:
-    python speech_to_text.py <mp3_file> [language] [--timestamps]
+    python speech_to_text.py <mp3_file> [language] [--timestamps] [--chinese=simplified|traditional]
     python speech_to_text.py --update-model
     python speech_to_text.py --diagnose
 
@@ -14,7 +15,9 @@ Arguments:
     mp3_file: Path to the MP3 file to transcribe
     language: Optional Whisper language code or 'auto'.
               Codes: english=en, chinese=zh, french=fr, auto=auto
+
     --timestamps: Include timestamps in output (disabled by default)
+    --chinese=simplified|traditional: Convert Chinese output to Simplified or Traditional (only if language is zh)
     --update-model: Download the latest Whisper base model to ./models/base.pt (requires internet)
     --diagnose: Print GPU/CUDA/PyTorch/Whisper/model diagnostics and exit
 
@@ -87,11 +90,11 @@ def transcribe_audio(audio_file, language_code=None):
     # detected = result.get("language") if isinstance(result, dict) else None
     # if detected:
     #     print(f"Detected language: {detected}")
-    
+
     return result
 
 
-def write_transcription(result, output_file, audio_file, include_timestamps=False):
+def write_transcription(result, output_file, audio_file, include_timestamps=False, chinese_conversion=None):
     """
     Write transcription result to a text file
     
@@ -118,6 +121,21 @@ def write_transcription(result, output_file, audio_file, include_timestamps=Fals
     except OSError:
         file_sha1 = ""
 
+    # Chinese conversion setup
+    cc = None
+    detected_lang = result.get('language')
+    if chinese_conversion:
+        if detected_lang == 'zh':
+            print(f"Converting Chinese output to: {chinese_conversion}")
+            try:
+                from opencc import OpenCC
+                cc = OpenCC('t2s' if chinese_conversion == 'simplified' else 's2t')
+            except ImportError:
+                print("Warning: opencc not installed, cannot convert Chinese characters.")
+                cc = None
+        else:
+            print("Warning: --chinese option ignored (language is not Chinese)")
+
     with open(output_file, 'w', encoding='utf-8') as f:
         # File metadata
         f.write(f"filename: {filename}\n")
@@ -133,6 +151,8 @@ def write_transcription(result, output_file, audio_file, include_timestamps=Fals
             # Use segments with timestamps
             for segment in result['segments']:
                 text = segment['text'].strip()
+                if cc:
+                    text = cc.convert(text)
                 start_time = format_timestamp(segment['start'])
                 end_time = format_timestamp(segment['end'])
                 f.write(f"[{start_time} --> {end_time}]\n")
@@ -141,6 +161,8 @@ def write_transcription(result, output_file, audio_file, include_timestamps=Fals
             # No timestamps: write one segment per line (improves readability)
             for segment in result.get('segments', []):
                 text = str(segment.get('text', '')).strip()
+                if cc:
+                    text = cc.convert(text)
                 if text:
                     f.write(text + "\n")
 
@@ -253,24 +275,37 @@ def main():
     # Parse arguments
     args = sys.argv[1:]
     include_timestamps = False
+    chinese_conversion = None
     
     # Check for --timestamps flag
     if '--timestamps' in args:
         include_timestamps = True
         args.remove('--timestamps')
+    # Check for --chinese flag
+    for arg in args[:]:
+        if arg.startswith('--chinese='):
+            val = arg.split('=', 1)[1].strip().lower()
+            if val in ('simplified', 'traditional'):
+                chinese_conversion = val
+            else:
+                print("Warning: --chinese must be 'simplified' or 'traditional'")
+            args.remove(arg)
     
     # Check number of arguments: require at least the MP3 file, optional language
     if len(args) < 1 or len(args) > 2:
         print("Error: Invalid number of arguments")
-        print("\nUsage: python speech_to_text.py <mp3_file> [language] [--timestamps]\n    python speech_to_text.py --update-model\n    python speech_to_text.py --diagnose")
+        print("\nUsage: python speech_to_text.py <mp3_file> [language] [--timestamps] [--chinese=simplified|traditional]\n    python speech_to_text.py --update-model\n    python speech_to_text.py --diagnose")
         print("\nArguments:")
         print("  mp3_file: Path to the MP3 file")
         print("  language: Optional Whisper language code or 'auto'")
         print("           Codes: english=en, chinese=zh, french=fr, auto=auto")
         print("  --timestamps: Include timestamps in output (disabled by default)")
+        print("  --chinese=simplified|traditional: Convert Chinese output to Simplified or Traditional (only if language is zh)")
         print("  --update-model: Download the latest Whisper base model to ./models/base.pt (requires internet)")
         print("  --diagnose: Print GPU/CUDA/PyTorch/Whisper/model diagnostics and exit")
         print("\nExamples:")
+        print("  python speech_to_text.py audio.mp3 zh --chinese=simplified")
+        print("  python speech_to_text.py audio.mp3 zh --chinese=traditional --timestamps")
         print("  python speech_to_text.py audio.mp3 en")
         print("  python speech_to_text.py audio.mp3 auto --timestamps")
         print("  python speech_to_text.py --update-model")
@@ -301,11 +336,10 @@ def main():
         # Transcribe audio
         result = transcribe_audio(audio_file, language_code)
         # Write transcription to file
-        write_transcription(result, output_file, audio_file, include_timestamps)
+        write_transcription(result, output_file, audio_file, include_timestamps, chinese_conversion)
 
         print(f"\nTranscription completed successfully!")
         print(f"Output written to: {output_file}")
-
     except Exception as e:
         print(f"\nError during transcription: {str(e)}")
         sys.exit(1)

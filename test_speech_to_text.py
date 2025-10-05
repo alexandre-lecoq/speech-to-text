@@ -150,7 +150,52 @@ class TestTranscriptionOutput(unittest.TestCase):
                 ]
             }
 
-            # Output file
+            # Output file (test with timestamps enabled)
+            out_path = os.path.join(tmpdir, 'out.txt')
+            speech_to_text.write_transcription(result, out_path, audio_path, include_timestamps=True)
+
+            # Read and check output
+            with open(out_path, 'r', encoding='utf-8') as f:
+                lines = f.read().splitlines()
+
+            # Check metadata
+            self.assertTrue(lines[0].startswith('filename: sample.mp3'))
+            self.assertTrue(lines[1].startswith('file_size: 3 bytes'))
+            self.assertTrue(lines[2].startswith('sha1:'))
+            # Blank line after metadata
+            self.assertEqual(lines[3], '')
+            # Language and segment count
+            self.assertEqual(lines[4], 'language: fr')
+            self.assertEqual(lines[5], 'segments: 2')
+            # One blank line before segments
+            self.assertEqual(lines[6], '')
+            # Segment 1 (with timestamps)
+            self.assertEqual(lines[7], '[00:00:00.000 --> 00:00:01.230]')
+            self.assertEqual(lines[8], 'Bonjour')
+            self.assertEqual(lines[9], '')
+            # Segment 2 (with timestamps)
+            self.assertEqual(lines[10], '[00:00:01.230 --> 00:00:02.340]')
+            self.assertEqual(lines[11], 'le monde')
+            self.assertEqual(lines[12], '')
+
+    def test_write_transcription_without_timestamps(self):
+        """Test transcription output format without timestamps"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create a dummy mp3 file
+            audio_path = os.path.join(tmpdir, 'sample.mp3')
+            with open(audio_path, 'wb') as f:
+                f.write(b'abc')
+
+            # Prepare a mock result
+            result = {
+                'language': 'fr',
+                'segments': [
+                    {'start': 0.0, 'end': 1.23, 'text': 'Bonjour'},
+                    {'start': 1.23, 'end': 2.34, 'text': 'le monde'}
+                ]
+            }
+
+            # Output file (default: no timestamps)
             out_path = os.path.join(tmpdir, 'out.txt')
             speech_to_text.write_transcription(result, out_path, audio_path)
 
@@ -169,14 +214,9 @@ class TestTranscriptionOutput(unittest.TestCase):
             self.assertEqual(lines[5], 'segments: 2')
             # One blank line before segments
             self.assertEqual(lines[6], '')
-            # Segment 1
-            self.assertEqual(lines[7], '[00:00:00.000 --> 00:00:01.230]')
-            self.assertEqual(lines[8], 'Bonjour')
-            self.assertEqual(lines[9], '')
-            # Segment 2
-            self.assertEqual(lines[10], '[00:00:01.230 --> 00:00:02.340]')
-            self.assertEqual(lines[11], 'le monde')
-            self.assertEqual(lines[12], '')
+            # Segments without timestamps
+            self.assertEqual(lines[7], 'Bonjour')
+            self.assertEqual(lines[8], 'le monde')
 
     def test_french_audio_transcription_integration(self):
         """End-to-end test of French audio transcription against ground truth"""

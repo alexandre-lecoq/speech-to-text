@@ -1,0 +1,8 @@
+filename: french_words.mp3
+file_size: 363761 bytes
+sha1: 9eb1bdc6bdfd97a3653df54842a0d93d94ac53a2
+
+language: fr
+segments: 1
+
+bonjour salut bonsoir bonne nuit à plus tard à bientôt à demain bonne journée au revoir comment ça va ça va bien

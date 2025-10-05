@@ -6,18 +6,19 @@ This tool converts MP3 audio files to text with timestamps.
 It supports Chinese, French, and English languages.
 
 Usage:
-    python speech_to_text.py <mp3_file> [language]
+    python speech_to_text.py <mp3_file> [language] [--timestamps]
     python speech_to_text.py --update-model
 
 Arguments:
     mp3_file: Path to the MP3 file to transcribe
     language: Optional Whisper language code or 'auto'.
               Codes: english=en, chinese=zh, french=fr, auto=auto
+    --timestamps: Include timestamps in output (disabled by default)
     --update-model: Download the latest Whisper base model to ./models/base.pt (requires internet)
 
 Example:
     python speech_to_text.py audio.mp3 en
-    python speech_to_text.py audio.mp3 auto
+    python speech_to_text.py audio.mp3 auto --timestamps
     python speech_to_text.py --update-model
 """
 
@@ -69,14 +70,15 @@ def transcribe_audio(audio_file, language_code=None):
     return result
 
 
-def write_transcription(result, output_file, audio_file):
+def write_transcription(result, output_file, audio_file, include_timestamps=False):
     """
-    Write transcription result to a text file with timestamps
+    Write transcription result to a text file
     
     Args:
         result: Whisper transcription result
         output_file: Path to the output text file
         audio_file: Path to the original input audio file (for metadata)
+        include_timestamps: Whether to include timestamps in output (default: False)
     """
     # Compute file metadata
     filename = os.path.basename(audio_file)
@@ -105,13 +107,19 @@ def write_transcription(result, output_file, audio_file):
         f.write(f"language: {result.get('language')}\n")
         f.write(f"segments: {len(result.get('segments', []))}\n\n")
 
-        # Segments (same formatting as before)
-        for segment in result['segments']:
-            start_time = format_timestamp(segment['start'])
-            end_time = format_timestamp(segment['end'])
-            text = segment['text'].strip()
-            f.write(f"[{start_time} --> {end_time}]\n")
-            f.write(f"{text}\n\n")
+        # Content
+        if include_timestamps:
+            # Use segments with timestamps
+            for segment in result['segments']:
+                text = segment['text'].strip()
+                start_time = format_timestamp(segment['start'])
+                end_time = format_timestamp(segment['end'])
+                f.write(f"[{start_time} --> {end_time}]\n")
+                f.write(f"{text}\n\n")
+        else:
+            # Use full text without timestamps (simpler and more efficient)
+            f.write(result.get('text', '').strip())
+            f.write('\n')
 
 
 def update_model():
@@ -140,23 +148,33 @@ def main():
         update_model()
         return
 
+    # Parse arguments
+    args = sys.argv[1:]
+    include_timestamps = False
+    
+    # Check for --timestamps flag
+    if '--timestamps' in args:
+        include_timestamps = True
+        args.remove('--timestamps')
+    
     # Check number of arguments: require at least the MP3 file, optional language
-    if len(sys.argv) < 2 or len(sys.argv) > 3:
+    if len(args) < 1 or len(args) > 2:
         print("Error: Invalid number of arguments")
-        print("\nUsage: python speech_to_text.py <mp3_file> [language]\n    python speech_to_text.py --update-model")
+        print("\nUsage: python speech_to_text.py <mp3_file> [language] [--timestamps]\n    python speech_to_text.py --update-model")
         print("\nArguments:")
         print("  mp3_file: Path to the MP3 file")
         print("  language: Optional Whisper language code or 'auto'")
         print("           Codes: english=en, chinese=zh, french=fr, auto=auto")
+        print("  --timestamps: Include timestamps in output (disabled by default)")
         print("  --update-model: Download the latest Whisper base model to ./models/base.pt (requires internet)")
         print("\nExamples:")
         print("  python speech_to_text.py audio.mp3 en")
-        print("  python speech_to_text.py audio.mp3 auto")
+        print("  python speech_to_text.py audio.mp3 auto --timestamps")
         print("  python speech_to_text.py --update-model")
         sys.exit(1)
 
-    audio_file = sys.argv[1]
-    language_input = sys.argv[2].lower() if len(sys.argv) == 3 else 'auto'
+    audio_file = args[0]
+    language_input = args[1].lower() if len(args) == 2 else 'auto'
 
     # Determine language code: None for auto-detect, else pass through
     language_code = None if language_input == 'auto' else language_input
@@ -180,7 +198,7 @@ def main():
         # Transcribe audio
         result = transcribe_audio(audio_file, language_code)
         # Write transcription to file
-        write_transcription(result, output_file, audio_file)
+        write_transcription(result, output_file, audio_file, include_timestamps)
 
         print(f"\nTranscription completed successfully!")
         print(f"Output written to: {output_file}")

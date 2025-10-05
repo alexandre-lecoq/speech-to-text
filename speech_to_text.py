@@ -10,6 +10,7 @@ Usage:
     python speech_to_text.py <mp3_file> [language] [--timestamps] [--chinese=simplified|traditional]
     python speech_to_text.py --update-model
     python speech_to_text.py --diagnose
+    python speech_to_text.py --list-languages
 
 Arguments:
     mp3_file: Path to the MP3 file to transcribe
@@ -20,6 +21,7 @@ Arguments:
     --chinese=simplified|traditional: Convert Chinese output to Simplified or Traditional (only if language is zh)
     --update-model: Download the latest Whisper base model to ./models/base.pt (requires internet)
     --diagnose: Print GPU/CUDA/PyTorch/Whisper/model diagnostics and exit
+    --list-languages: Print all supported Whisper language codes and names
 
 Example:
     python speech_to_text.py audio.mp3 en
@@ -260,6 +262,19 @@ def update_model():
     shutil.copy2(cache_path, "./models/base.pt")
     print("Model updated: ./models/base.pt")
 
+def list_languages():
+    """Print all supported Whisper language codes and names, then exit."""
+    try:
+        import whisper
+        langs = whisper.tokenizer.LANGUAGES
+    except Exception:
+        print("Error: Whisper is not installed. Cannot list languages.")
+        sys.exit(1)
+    print("Supported Whisper languages:")
+    for code, name in sorted(langs.items()):
+        print(f"{code}: {name}")
+    sys.exit(0)
+
 def main():
     """Main function to handle command line arguments and run transcription"""
     
@@ -270,6 +285,10 @@ def main():
     # Option: diagnose
     if len(sys.argv) == 2 and sys.argv[1] == "--diagnose":
         diagnose()
+        return
+    # Option: list languages
+    if len(sys.argv) == 2 and sys.argv[1] == "--list-languages":
+        list_languages()
         return
 
     # Parse arguments
@@ -294,7 +313,7 @@ def main():
     # Check number of arguments: require at least the MP3 file, optional language
     if len(args) < 1 or len(args) > 2:
         print("Error: Invalid number of arguments")
-        print("\nUsage: python speech_to_text.py <mp3_file> [language] [--timestamps] [--chinese=simplified|traditional]\n    python speech_to_text.py --update-model\n    python speech_to_text.py --diagnose")
+        print("\nUsage: python speech_to_text.py <mp3_file> [language] [--timestamps] [--chinese=simplified|traditional]\n    python speech_to_text.py --update-model\n    python speech_to_text.py --diagnose\n    python speech_to_text.py --list-languages")
         print("\nArguments:")
         print("  mp3_file: Path to the MP3 file")
         print("  language: Optional Whisper language code or 'auto'")
@@ -303,12 +322,14 @@ def main():
         print("  --chinese=simplified|traditional: Convert Chinese output to Simplified or Traditional (only if language is zh)")
         print("  --update-model: Download the latest Whisper base model to ./models/base.pt (requires internet)")
         print("  --diagnose: Print GPU/CUDA/PyTorch/Whisper/model diagnostics and exit")
+        print("  --list-languages: Print all supported Whisper language codes and names")
         print("\nExamples:")
         print("  python speech_to_text.py audio.mp3 zh --chinese=simplified")
         print("  python speech_to_text.py audio.mp3 zh --chinese=traditional --timestamps")
         print("  python speech_to_text.py audio.mp3 en")
         print("  python speech_to_text.py audio.mp3 auto --timestamps")
         print("  python speech_to_text.py --update-model")
+        print("  python speech_to_text.py --list-languages")
         sys.exit(1)
 
     audio_file = args[0]

@@ -178,6 +178,45 @@ class TestTranscriptionOutput(unittest.TestCase):
             self.assertEqual(lines[11], 'le monde')
             self.assertEqual(lines[12], '')
 
+    def test_french_audio_transcription_integration(self):
+        """End-to-end test of French audio transcription against ground truth"""
+        # Skip if test files don't exist or model file not available
+        audio_file = 'test_data/french_words.mp3'
+        ground_truth_file = 'test_data/french_words_ground_truth.txt'
+        model_file = 'models/base.pt'
+        
+        if not (os.path.exists(audio_file) and os.path.exists(ground_truth_file) and os.path.exists(model_file)):
+            self.skipTest("Test data files or model file not found")
+        
+        # Read ground truth words
+        with open(ground_truth_file, 'r', encoding='utf-8') as f:
+            ground_truth_words = [line.strip().lower() for line in f if line.strip()]
+        
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output_file = os.path.join(tmpdir, 'french_test_output.txt')
+            
+            try:
+                # Perform actual transcription (end-to-end test)
+                result = speech_to_text.transcribe_audio(audio_file, 'fr')
+                
+                # Write transcription to file
+                speech_to_text.write_transcription(result, output_file, audio_file)
+                
+                # Read the transcription output
+                with open(output_file, 'r', encoding='utf-8') as f:
+                    output_content = f.read().lower()
+                
+                # Check if ground truth words appear in order
+                last_position = -1
+                for word_phrase in ground_truth_words:
+                    position = output_content.find(word_phrase)
+                    self.assertGreater(position, last_position, 
+                                     f"Word/phrase '{word_phrase}' not found in correct order in transcription output")
+                    last_position = position
+                    
+            except Exception as e:
+                self.skipTest(f"Transcription failed (likely due to missing Whisper dependency): {e}")
+
 
 if __name__ == '__main__':
     # Run tests

@@ -87,11 +87,6 @@ def transcribe_audio(audio_file, language_code=None):
         kwargs["language"] = language_code
     
     result = model.transcribe(audio_file, **kwargs)
-    
-    # Print detected language if available
-    # detected = result.get("language") if isinstance(result, dict) else None
-    # if detected:
-    #     print(f"Detected language: {detected}")
 
     return result
 

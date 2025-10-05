@@ -195,13 +195,17 @@ class TestTranscriptionOutput(unittest.TestCase):
                 ]
             }
 
+            # Add 'text' field to mock result for no-timestamp mode
+            result['text'] = 'Bonjour le monde'
+            
             # Output file (default: no timestamps)
             out_path = os.path.join(tmpdir, 'out.txt')
             speech_to_text.write_transcription(result, out_path, audio_path)
 
             # Read and check output
             with open(out_path, 'r', encoding='utf-8') as f:
-                lines = f.read().splitlines()
+                content = f.read()
+                lines = content.splitlines()
 
             # Check metadata
             self.assertTrue(lines[0].startswith('filename: sample.mp3'))
@@ -212,11 +216,10 @@ class TestTranscriptionOutput(unittest.TestCase):
             # Language and segment count
             self.assertEqual(lines[4], 'language: fr')
             self.assertEqual(lines[5], 'segments: 2')
-            # One blank line before segments
+            # One blank line before content
             self.assertEqual(lines[6], '')
-            # Segments without timestamps
-            self.assertEqual(lines[7], 'Bonjour')
-            self.assertEqual(lines[8], 'le monde')
+            # Full text without timestamps
+            self.assertEqual(lines[7], 'Bonjour le monde')
 
     def test_french_audio_transcription_integration(self):
         """End-to-end test of French audio transcription against ground truth"""

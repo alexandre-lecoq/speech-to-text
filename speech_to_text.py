@@ -26,6 +26,7 @@ import sys
 import os
 import hashlib
 import whisper
+import torch
 from datetime import timedelta
 
 
@@ -50,8 +51,12 @@ def transcribe_audio(audio_file, language_code=None):
     Returns:
         Transcription result with segments
     """
+    # Check for GPU availability
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"Using device: {device}")
+    
     print(f"Loading Whisper model from ./models/base.pt ...")
-    model = whisper.load_model("./models/base.pt")
+    model = whisper.load_model("./models/base.pt", device=device)
     
     print(f"Transcribing audio file: {audio_file}")
     print(f"Language: {language_code if language_code else 'auto-detect'}")

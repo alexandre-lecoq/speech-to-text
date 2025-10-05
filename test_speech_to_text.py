@@ -8,6 +8,8 @@ Tests the command-line argument parsing and validation logic.
 import sys
 import os
 import tempfile
+import io
+from contextlib import redirect_stdout
 import unittest
 from unittest.mock import patch, MagicMock
 from datetime import timedelta
@@ -259,6 +261,20 @@ class TestTranscriptionOutput(unittest.TestCase):
                     
             except Exception as e:
                 self.skipTest(f"Transcription failed (likely due to missing Whisper dependency): {e}")
+
+
+class TestDiagnoseOption(unittest.TestCase):
+    """Test the --diagnose CLI option"""
+
+    def test_diagnose_exits_and_prints(self):
+        buf = io.StringIO()
+        with patch.object(sys, 'argv', ['speech_to_text.py', '--diagnose']):
+            with self.assertRaises(SystemExit) as cm:
+                with redirect_stdout(buf):
+                    speech_to_text.main()
+        self.assertEqual(cm.exception.code, 0)
+        output = buf.getvalue()
+        self.assertIn('Speech-to-Text Diagnostics', output)
 
 
 if __name__ == '__main__':

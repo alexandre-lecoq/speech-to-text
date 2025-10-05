@@ -8,6 +8,7 @@ It supports Chinese, French, and English languages.
 Usage:
     python speech_to_text.py <mp3_file> [language] [--timestamps]
     python speech_to_text.py --update-model
+    python speech_to_text.py --diagnose
 
 Arguments:
     mp3_file: Path to the MP3 file to transcribe
@@ -15,19 +16,21 @@ Arguments:
               Codes: english=en, chinese=zh, french=fr, auto=auto
     --timestamps: Include timestamps in output (disabled by default)
     --update-model: Download the latest Whisper base model to ./models/base.pt (requires internet)
+    --diagnose: Print GPU/CUDA/PyTorch/Whisper/model diagnostics and exit
 
 Example:
     python speech_to_text.py audio.mp3 en
     python speech_to_text.py audio.mp3 auto --timestamps
     python speech_to_text.py --update-model
+    python speech_to_text.py --diagnose
 """
 
 import sys
 import os
 import hashlib
-import whisper
-import torch
 from datetime import timedelta
+import platform
+import subprocess
 
 
 def format_timestamp(seconds):
@@ -51,12 +54,25 @@ def transcribe_audio(audio_file, language_code=None):
     Returns:
         Transcription result with segments
     """
+    # Lazy import heavy deps
+    try:
+        import torch as _torch
+    except Exception:
+        _torch = None
+    try:
+        import whisper as _whisper
+    except Exception as e:
+        raise RuntimeError("Whisper is not installed. Please install 'openai-whisper' to use this tool.") from e
+
     # Check for GPU availability
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if _torch is not None:
+        device = "cuda" if _torch.cuda.is_available() else "cpu"
+    else:
+        device = "cpu"
     print(f"Using device: {device}")
     
     print(f"Loading Whisper model from ./models/base.pt ...")
-    model = whisper.load_model("./models/base.pt", device=device)
+    model = _whisper.load_model("./models/base.pt", device=device)
     
     print(f"Transcribing audio file: {audio_file}")
     print(f"Language: {language_code if language_code else 'auto-detect'}")
@@ -127,13 +143,88 @@ def write_transcription(result, output_file, audio_file, include_timestamps=Fals
             f.write('\n')
 
 
+def diagnose():
+    """Print a diagnostics report about GPU/driver/CUDA/PyTorch/Whisper and exit."""
+    print("=== Speech-to-Text Diagnostics ===")
+    # Python and OS
+    print(f"Python: {sys.version.split()[0]}")
+    print(f"Platform: {platform.platform()}")
+
+    # NVIDIA driver via nvidia-smi
+    try:
+        result = subprocess.run(["nvidia-smi"], capture_output=True, text=True, timeout=5)
+        if result.returncode == 0:
+            print("\n[nvidia-smi]\n" + result.stdout.strip())
+        else:
+            print("\n[nvidia-smi] Not available or returned error")
+    except Exception as e:
+        print(f"\n[nvidia-smi] Not available: {e}")
+
+    # nvcc version
+    try:
+        result = subprocess.run(["nvcc", "--version"], capture_output=True, text=True, timeout=5)
+        if result.returncode == 0:
+            print("\n[nvcc --version]\n" + result.stdout.strip())
+        else:
+            print("\n[nvcc] Not available or returned error")
+    except Exception as e:
+        print(f"\n[nvcc] Not available: {e}")
+
+    # PyTorch
+    try:
+        import torch as _torch
+        print("\n[PyTorch]")
+        print(f"  Version: {_torch.__version__}")
+        print(f"  CUDA available: {_torch.cuda.is_available()}")
+        print(f"  CUDA runtime: {_torch.version.cuda}")
+        print(f"  cuDNN enabled: {_torch.backends.cudnn.enabled}")
+        if _torch.cuda.is_available():
+            print(f"  Device count: {_torch.cuda.device_count()}")
+            for i in range(_torch.cuda.device_count()):
+                name = _torch.cuda.get_device_name(i)
+                cap = _torch.cuda.get_device_capability(i)
+                print(f"  GPU {i}: {name} (SM {cap[0]}.{cap[1]})")
+    except Exception as e:
+        print(f"\n[PyTorch] Not available: {e}")
+
+    # Whisper
+    try:
+        import whisper as _whisper
+        print("\n[Whisper]")
+        print(f"  Version: {_whisper.__version__ if hasattr(_whisper, '__version__') else 'unknown'}")
+    except Exception as e:
+        print(f"\n[Whisper] Not available: {e}")
+
+    # Model file
+    model_path = os.path.abspath(os.path.join(".", "models", "base.pt"))
+    print("\n[Model file]")
+    if os.path.exists(model_path):
+        try:
+            size = os.path.getsize(model_path)
+            print(f"  Found: {model_path}")
+            print(f"  Size: {size} bytes")
+        except Exception as e:
+            print(f"  Found but could not stat: {model_path} ({e})")
+    else:
+        print(f"  Not found: {model_path}")
+
+    # Exit after diagnostics
+    sys.exit(0)
+
+
 def update_model():
     """
     Download the latest Whisper base model and save to ./models/base.pt
     """
     print("Downloading latest Whisper base model (requires internet)...")
     import shutil
-    model = whisper.load_model("base")
+    # Lazy import whisper here as well
+    try:
+        import whisper as _whisper
+    except Exception as e:
+        print("Error: Whisper is not installed. Please install 'openai-whisper' to update the model.")
+        sys.exit(1)
+    model = _whisper.load_model("base")
     # Find the cached model file
     cache_dir = os.path.expanduser(os.getenv("WHISPER_CACHE", "~/.cache/whisper"))
     cache_path = os.path.join(cache_dir, "base.pt")
@@ -152,6 +243,10 @@ def main():
     if len(sys.argv) == 2 and sys.argv[1] == "--update-model":
         update_model()
         return
+    # Option: diagnose
+    if len(sys.argv) == 2 and sys.argv[1] == "--diagnose":
+        diagnose()
+        return
 
     # Parse arguments
     args = sys.argv[1:]
@@ -165,13 +260,14 @@ def main():
     # Check number of arguments: require at least the MP3 file, optional language
     if len(args) < 1 or len(args) > 2:
         print("Error: Invalid number of arguments")
-        print("\nUsage: python speech_to_text.py <mp3_file> [language] [--timestamps]\n    python speech_to_text.py --update-model")
+        print("\nUsage: python speech_to_text.py <mp3_file> [language] [--timestamps]\n    python speech_to_text.py --update-model\n    python speech_to_text.py --diagnose")
         print("\nArguments:")
         print("  mp3_file: Path to the MP3 file")
         print("  language: Optional Whisper language code or 'auto'")
         print("           Codes: english=en, chinese=zh, french=fr, auto=auto")
         print("  --timestamps: Include timestamps in output (disabled by default)")
         print("  --update-model: Download the latest Whisper base model to ./models/base.pt (requires internet)")
+        print("  --diagnose: Print GPU/CUDA/PyTorch/Whisper/model diagnostics and exit")
         print("\nExamples:")
         print("  python speech_to_text.py audio.mp3 en")
         print("  python speech_to_text.py audio.mp3 auto --timestamps")

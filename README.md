@@ -8,11 +8,13 @@ A simple, cross-platform command-line tool to transcribe MP3 audio to text using
 - Language handling:
   - Provide a Whisper language code (e.g., `en`, `fr`, `zh`), or
   - Omit it or use `auto` to auto-detect the language
-- Optional timestamps per segment (`--timestamps`)
-- Deterministic output format with file metadata and language info
-- Uses a local Whisper model file (`./models/base.pt`) for offline use
-- GPU acceleration if a CUDA-enabled PyTorch is available; falls back to CPU
-- Diagnostics mode (`--diagnose`) to print environment info and exit
+  - Optional timestamps per segment (`--timestamps`)
+  - Optional Chinese character conversion (`--chinese=simplified|traditional`)—only if detected language is Chinese; invalid values cause an error and exit
+  - Deterministic output format with file metadata and language info
+  - Uses a local Whisper model file (`./models/base.pt`) for offline use
+  - GPU acceleration if a CUDA-enabled PyTorch is available; falls back to CPU
+  - Diagnostics mode (`--diagnose`) to print environment info and exit
+  - List all supported Whisper languages (`--list-languages`)
 
 ## Requirements
 
@@ -66,6 +68,15 @@ Include timestamps per segment:
 python speech_to_text.py <mp3_file> [language] --timestamps
 ```
 
+Convert Chinese output to Simplified or Traditional (only if detected language is Chinese):
+
+```bash
+python speech_to_text.py <mp3_file> [language] --chinese=simplified
+python speech_to_text.py <mp3_file> [language] --chinese=traditional
+```
+
+> **Note:** If you provide an invalid value for `--chinese` (anything other than `simplified` or `traditional`), the program will print an error and exit.
+
 Update the local model file (requires internet):
 
 ```bash
@@ -76,6 +87,12 @@ Print a diagnostics report and exit:
 
 ```bash
 python speech_to_text.py --diagnose
+```
+
+List all supported Whisper languages (code and name):
+
+```bash
+python speech_to_text.py --list-languages
 ```
 
 ## Output
@@ -118,6 +135,8 @@ This prints Python/OS info, `nvidia-smi` (if available), `nvcc --version` (if av
 ## Notes
 
 - Supported language codes include Whisper’s standard codes, e.g., `en`, `fr`, `zh`. Using `auto` or omitting the language enables auto-detection.
+- The `--chinese` option only works if the detected language is Chinese (`zh`). If used with any other language, it is ignored with a warning. Invalid values for `--chinese` cause an error and exit.
+- The `--list-languages` option prints all supported Whisper language codes and their names, then exits.
 - The `--update-model` command requires internet connectivity. Normal transcription runs with the local `./models/base.pt` file.
 - Windows is supported. The repository includes unit tests and a small French audio sample for end-to-end validation.
 

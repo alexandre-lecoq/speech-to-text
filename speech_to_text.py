@@ -302,7 +302,8 @@ def main():
             if val in ('simplified', 'traditional'):
                 chinese_conversion = val
             else:
-                print("Warning: --chinese must be 'simplified' or 'traditional'")
+                print("Error: --chinese must be 'simplified' or 'traditional'")
+                sys.exit(1)
             args.remove(arg)
     
     # Check number of arguments: require at least the MP3 file, optional language

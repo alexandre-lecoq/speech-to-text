@@ -30,12 +30,17 @@ Example:
     python speech_to_text.py --diagnose
 """
 
+
 import sys
 import os
 import hashlib
 from datetime import timedelta
 import platform
 import subprocess
+import shutil
+import torch
+import whisper
+from opencc import OpenCC
 
 
 def format_timestamp(seconds):
@@ -59,35 +64,17 @@ def transcribe_audio(audio_file, language_code=None):
     Returns:
         Transcription result with segments
     """
-    # Lazy import heavy deps
-    try:
-        import torch as _torch
-    except Exception:
-        _torch = None
-    try:
-        import whisper as _whisper
-    except Exception as e:
-        raise RuntimeError("Whisper is not installed. Please install 'openai-whisper' to use this tool.") from e
-
     # Check for GPU availability
-    if _torch is not None:
-        device = "cuda" if _torch.cuda.is_available() else "cpu"
-    else:
-        device = "cpu"
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
-    
     print(f"Loading Whisper model from ./models/base.pt ...")
-    model = _whisper.load_model("./models/base.pt", device=device)
-    
+    model = whisper.load_model("./models/base.pt", device=device)
     print(f"Transcribing audio file: {audio_file}")
     print(f"Language: {language_code if language_code else 'auto-detect'}")
-    
     kwargs = {"verbose": False}
     if language_code:
         kwargs["language"] = language_code
-    
     result = model.transcribe(audio_file, **kwargs)
-
     return result
 
 
@@ -124,12 +111,7 @@ def write_transcription(result, output_file, audio_file, include_timestamps=Fals
     if chinese_conversion:
         if detected_lang == 'zh':
             print(f"Converting Chinese output to: {chinese_conversion}")
-            try:
-                from opencc import OpenCC
-                cc = OpenCC('t2s' if chinese_conversion == 'simplified' else 's2t')
-            except ImportError:
-                print("Warning: opencc not installed, cannot convert Chinese characters.")
-                cc = None
+            cc = OpenCC('t2s' if chinese_conversion == 'simplified' else 's2t')
         else:
             print("Warning: --chinese option ignored (language is not Chinese)")
 
@@ -191,28 +173,25 @@ def diagnose():
     except Exception as e:
         print(f"\n[nvcc] Not available: {e}")
 
-    # PyTorch
     try:
-        import torch as _torch
         print("\n[PyTorch]")
-        print(f"  Version: {_torch.__version__}")
-        print(f"  CUDA available: {_torch.cuda.is_available()}")
-        print(f"  CUDA runtime: {_torch.version.cuda}")
-        print(f"  cuDNN enabled: {_torch.backends.cudnn.enabled}")
-        if _torch.cuda.is_available():
-            print(f"  Device count: {_torch.cuda.device_count()}")
-            for i in range(_torch.cuda.device_count()):
-                name = _torch.cuda.get_device_name(i)
-                cap = _torch.cuda.get_device_capability(i)
+        print(f"  Version: {torch.__version__}")
+        print(f"  CUDA available: {torch.cuda.is_available()}")
+        print(f"  CUDA runtime: {torch.version.cuda}")
+        print(f"  cuDNN enabled: {torch.backends.cudnn.enabled}")
+        if torch.cuda.is_available():
+            print(f"  Device count: {torch.cuda.device_count()}")
+            for i in range(torch.cuda.device_count()):
+                name = torch.cuda.get_device_name(i)
+                cap = torch.cuda.get_device_capability(i)
                 print(f"  GPU {i}: {name} (SM {cap[0]}.{cap[1]})")
     except Exception as e:
         print(f"\n[PyTorch] Not available: {e}")
 
     # Whisper
     try:
-        import whisper as _whisper
         print("\n[Whisper]")
-        print(f"  Version: {_whisper.__version__ if hasattr(_whisper, '__version__') else 'unknown'}")
+        print(f"  Version: {whisper.__version__ if hasattr(whisper, '__version__') else 'unknown'}")
     except Exception as e:
         print(f"\n[Whisper] Not available: {e}")
 
@@ -238,14 +217,7 @@ def update_model():
     Download the latest Whisper base model and save to ./models/base.pt
     """
     print("Downloading latest Whisper base model (requires internet)...")
-    import shutil
-    # Lazy import whisper here as well
-    try:
-        import whisper as _whisper
-    except Exception as e:
-        print("Error: Whisper is not installed. Please install 'openai-whisper' to update the model.")
-        sys.exit(1)
-    model = _whisper.load_model("base")
+    model = whisper.load_model("base")
     # Find the cached model file
     cache_dir = os.path.expanduser(os.getenv("WHISPER_CACHE", "~/.cache/whisper"))
     cache_path = os.path.join(cache_dir, "base.pt")
@@ -259,12 +231,7 @@ def update_model():
 
 def list_languages():
     """Print all supported Whisper language codes and names, then exit."""
-    try:
-        import whisper
-        langs = whisper.tokenizer.LANGUAGES
-    except Exception:
-        print("Error: Whisper is not installed. Cannot list languages.")
-        sys.exit(1)
+    langs = whisper.tokenizer.LANGUAGES
     print("Supported Whisper languages:")
     for code, name in sorted(langs.items()):
         print(f"{code}: {name}")

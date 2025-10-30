@@ -176,37 +176,36 @@ class SpeechToTextGUI(QMainWindow):
         self.elapsed_timer = QTimer()
         self.elapsed_timer.timeout.connect(self.update_elapsed_time)
         
-        # Languages supported by Whisper
-        self.languages = {
-            "Auto-detect": None,
-            "English": "en",
-            "French": "fr",
-            "Chinese": "zh",
-            "Spanish": "es",
-            "German": "de",
-            "Italian": "it",
-            "Portuguese": "pt",
-            "Russian": "ru",
-            "Japanese": "ja",
-            "Korean": "ko",
-            "Arabic": "ar",
-            "Dutch": "nl",
-            "Turkish": "tr",
-            "Polish": "pl",
-            "Swedish": "sv",
-            "Finnish": "fi",
-            "Danish": "da",
-            "Norwegian": "no",
-            "Czech": "cs",
-            "Hungarian": "hu",
-            "Greek": "el",
-            "Romanian": "ro",
-            "Vietnamese": "vi",
-            "Thai": "th",
-            "Indonesian": "id",
-            "Malay": "ms",
-            "Hebrew": "he",
-            "Ukrainian": "uk",
+        # Languages supported by Whisper - using language codes as keys
+        self.language_codes = [
+            None, "en", "fr", "zh", "es", "de", "it", "pt", "ru", "ja", "ko", "ar",
+            "nl", "tr", "pl", "sv", "fi", "da", "no", "cs", "hu", "el", "ro", "vi",
+            "th", "id", "ms", "he", "uk"
+        ]
+        
+        # Translated language names for display
+        self.language_names = {
+            "en": [
+                "Auto-detect", "English", "French", "Chinese", "Spanish", "German",
+                "Italian", "Portuguese", "Russian", "Japanese", "Korean", "Arabic",
+                "Dutch", "Turkish", "Polish", "Swedish", "Finnish", "Danish",
+                "Norwegian", "Czech", "Hungarian", "Greek", "Romanian", "Vietnamese",
+                "Thai", "Indonesian", "Malay", "Hebrew", "Ukrainian"
+            ],
+            "fr": [
+                "Détection automatique", "Anglais", "Français", "Chinois", "Espagnol", "Allemand",
+                "Italien", "Portugais", "Russe", "Japonais", "Coréen", "Arabe",
+                "Néerlandais", "Turc", "Polonais", "Suédois", "Finnois", "Danois",
+                "Norvégien", "Tchèque", "Hongrois", "Grec", "Roumain", "Vietnamien",
+                "Thaï", "Indonésien", "Malais", "Hébreu", "Ukrainien"
+            ],
+            "zh": [
+                "自动检测", "英语", "法语", "中文", "西班牙语", "德语",
+                "意大利语", "葡萄牙语", "俄语", "日语", "韩语", "阿拉伯语",
+                "荷兰语", "土耳其语", "波兰语", "瑞典语", "芬兰语", "丹麦语",
+                "挪威语", "捷克语", "匈牙利语", "希腊语", "罗马尼亚语", "越南语",
+                "泰语", "印尼语", "马来语", "希伯来语", "乌克兰语"
+            ]
         }
         
         self.create_widgets()
@@ -258,6 +257,9 @@ class SpeechToTextGUI(QMainWindow):
         self.timestamps_check.setText(self.t("timestamps"))
         self.chinese_check.setText(self.t("chinese_conversion"))
         self.gui_lang_label.setText(self.t("gui_language"))
+        
+        # Update language combo box with translated "Auto-detect"
+        self.update_language_combo()
         
         # Update Chinese conversion combo box items
         current_index = self.chinese_combo.currentIndex()
@@ -445,7 +447,8 @@ class SpeechToTextGUI(QMainWindow):
         lang_layout.addWidget(self.lang_label)
         
         self.language_combo = QComboBox()
-        self.language_combo.addItems(list(self.languages.keys()))
+        # Populate language combo with translated "Auto-detect" and other languages
+        self.update_language_combo()
         self.language_combo.setFixedWidth(200)
         lang_layout.addWidget(self.language_combo)
         lang_layout.addStretch()
@@ -560,6 +563,21 @@ class SpeechToTextGUI(QMainWindow):
         }
         lang_code = lang_map.get(choice, "en")
         self.change_language(lang_code)
+    
+    def update_language_combo(self):
+        """Update the language combo box with translated language names and preserve selection"""
+        # Remember current selection by index
+        current_index = self.language_combo.currentIndex()
+        if current_index < 0:
+            current_index = 0  # Default to first item (Auto-detect)
+        
+        # Clear and rebuild the list with translated names
+        self.language_combo.clear()
+        self.language_combo.addItems(self.language_names[self.current_language])
+        
+        # Restore selection by index
+        if current_index < self.language_combo.count():
+            self.language_combo.setCurrentIndex(current_index)
     
     def browse_file(self):
         """Open file dialog to select MP3 file"""
@@ -690,12 +708,12 @@ class SpeechToTextGUI(QMainWindow):
             self.signals.start_elapsed_timer.emit()  # Signal to start timer in main thread
             
             # Get options
-            language_name = self.language_combo.currentText()
-            # Handle translated "Auto-detect"
-            if language_name == self.t("auto_detect"):
-                language_code = None
+            language_index = self.language_combo.currentIndex()
+            # Get the language code from the index
+            if language_index >= 0 and language_index < len(self.language_codes):
+                language_code = self.language_codes[language_index]
             else:
-                language_code = self.languages.get(language_name, None)
+                language_code = None  # Default to auto-detect
             include_timestamps = self.timestamps_check.isChecked()
             
             chinese_conversion = None

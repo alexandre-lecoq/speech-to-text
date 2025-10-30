@@ -17,7 +17,10 @@ class SpeechToTextGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Speech to Text - Transcription Audio")
-        self.root.geometry("900x750")
+        self.root.geometry("1300x900")
+        
+        # Set minimum window size
+        self.root.minsize(723, 784)
         
         # Set theme
         ctk.set_appearance_mode("dark")  # Modes: "System", "Dark", "Light"

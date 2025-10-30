@@ -1,10 +1,12 @@
 # speech-to-text
 
-A simple, cross-platform command-line tool to transcribe MP3 audio to text using OpenAI Whisper, with optional timestamps, offline model support, GPU acceleration when available, and a diagnostics mode.
+A simple, cross-platform tool to transcribe MP3 audio to text using OpenAI Whisper, with optional timestamps, offline model support, GPU acceleration when available, and a diagnostics mode. Available as both a command-line tool and a graphical user interface (GUI).
 
 ## Features
 
 - Transcribes MP3 audio files to text
+- **Graphical User Interface (GUI)** for easy, visual interaction
+- **Command-line interface** for automation and scripting
 - Language handling:
   - Provide a Whisper language code (e.g., `en`, `fr`, `zh`), or
   - Omit it or use `auto` to auto-detect the language
@@ -48,6 +50,30 @@ python speech_to_text.py --update-model
 This downloads the latest Whisper “base” model (requires internet) and saves it to `./models/base.pt` for offline use.
 
 ## Usage
+
+### Graphical User Interface (GUI)
+
+Launch the GUI for a visual, easy-to-use interface:
+
+```bash
+python speech_to_text.py --gui
+```
+
+Or run the GUI directly:
+
+```bash
+python gui.py
+```
+
+The GUI provides:
+- **File browser** to select your MP3 audio file
+- **Language selection** dropdown with auto-detect option
+- **Options** for timestamps and Chinese character conversion
+- **Progress bar** showing transcription status
+- **Result preview** displaying the first 1000 characters
+- **One-click access** to open the generated transcription file
+
+### Command-Line Interface
 
 Basic transcription (language auto-detected):
 

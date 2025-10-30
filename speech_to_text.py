@@ -8,6 +8,7 @@ It supports Chinese, French, and English languages.
 
 Usage:
     python speech_to_text.py <mp3_file> [language] [--timestamps] [--chinese=simplified|traditional]
+    python speech_to_text.py --gui
     python speech_to_text.py --update-model
     python speech_to_text.py --diagnose
     python speech_to_text.py --list-languages
@@ -17,6 +18,7 @@ Arguments:
     language: Optional Whisper language code or 'auto'.
               Codes: english=en, chinese=zh, french=fr, auto=auto
 
+    --gui: Launch the graphical user interface
     --timestamps: Include timestamps in output (disabled by default)
     --chinese=simplified|traditional: Convert Chinese output to Simplified or Traditional (only if language is zh)
     --update-model: Download the latest Whisper base model to ./models/base.pt (requires internet)
@@ -24,6 +26,7 @@ Arguments:
     --list-languages: Print all supported Whisper language codes and names
 
 Example:
+    python speech_to_text.py --gui
     python speech_to_text.py audio.mp3 en
     python speech_to_text.py audio.mp3 auto --timestamps
     python speech_to_text.py --update-model
@@ -240,6 +243,11 @@ def list_languages():
 def main():
     """Main function to handle command line arguments and run transcription"""
     
+    # Option: GUI
+    if len(sys.argv) == 2 and sys.argv[1] == "--gui":
+        from gui import launch_gui
+        launch_gui()
+        return
     # Option: update model
     if len(sys.argv) == 2 and sys.argv[1] == "--update-model":
         update_model()

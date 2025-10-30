@@ -9,15 +9,90 @@ Provides an easy-to-use, modern interface for transcribing MP3 audio files.
 import os
 import threading
 import time
+import locale
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from speech_to_text import transcribe_audio, write_transcription
 
 
 class SpeechToTextGUI:
+    # Translation dictionary
+    TRANSLATIONS = {
+        "fr": {
+            "title": "Speech to Text - Transcription Audio",
+            "window_title": "Speech to Text - Transcription Audio",
+            "section1": "1. Sélectionner un fichier audio (MP3):",
+            "browse": "Parcourir...",
+            "no_file": "Aucun fichier sélectionné",
+            "section2": "2. Options de transcription:",
+            "language": "Langue:",
+            "auto_detect": "Auto-detect",
+            "timestamps": "Inclure les timestamps",
+            "chinese_conversion": "Conversion chinoise:",
+            "section3": "3. Fichier de sortie:",
+            "transcribe_btn": "🚀 Transcrire",
+            "open_result_btn": "📄 Ouvrir le résultat",
+            "preview": "Aperçu du résultat:",
+            "tip": "💡 Astuce: Vous pouvez aussi utiliser l'outil en ligne de commande",
+            "ready": "Prêt",
+            "ready_to_transcribe": "Prêt à transcrire",
+            "transcribing": "Transcription en cours depuis",
+            "transcription_complete": "✓ Transcription terminée!\nFichier sauvegardé:",
+            "error": "❌ Erreur:",
+            "warning_title": "Attention",
+            "select_file_warning": "Veuillez sélectionner un fichier audio",
+            "error_title": "Erreur",
+            "file_not_exist": "Le fichier sélectionné n'existe pas",
+            "info_title": "Information",
+            "no_transcription": "Aucun fichier de transcription disponible",
+            "file_exists_warning": "⚠️ Le fichier existe déjà et sera écrasé lors de la transcription",
+            "file_read_error": "Erreur lors de la lecture du fichier existant:",
+            "file_coming": "Fichier à venir",
+            "file_will_be_created": "Le fichier sera créé ici après la transcription:\n",
+            "gui_language": "Langue:",
+        },
+        "en": {
+            "title": "Speech to Text - Audio Transcription",
+            "window_title": "Speech to Text - Audio Transcription",
+            "section1": "1. Select an audio file (MP3):",
+            "browse": "Browse...",
+            "no_file": "No file selected",
+            "section2": "2. Transcription options:",
+            "language": "Language:",
+            "auto_detect": "Auto-detect",
+            "timestamps": "Include timestamps",
+            "chinese_conversion": "Chinese conversion:",
+            "section3": "3. Output file:",
+            "transcribe_btn": "🚀 Transcribe",
+            "open_result_btn": "📄 Open result",
+            "preview": "Result preview:",
+            "tip": "💡 Tip: You can also use the command-line tool",
+            "ready": "Ready",
+            "ready_to_transcribe": "Ready to transcribe",
+            "transcribing": "Transcribing for",
+            "transcription_complete": "✓ Transcription complete!\nFile saved:",
+            "error": "❌ Error:",
+            "warning_title": "Warning",
+            "select_file_warning": "Please select an audio file",
+            "error_title": "Error",
+            "file_not_exist": "The selected file does not exist",
+            "info_title": "Information",
+            "no_transcription": "No transcription file available",
+            "file_exists_warning": "⚠️ The file already exists and will be overwritten during transcription",
+            "file_read_error": "Error reading existing file:",
+            "file_coming": "Upcoming file",
+            "file_will_be_created": "The file will be created here after transcription:\n",
+            "gui_language": "Language:",
+        }
+    }
+    
     def __init__(self, root):
         self.root = root
-        self.root.title("Speech to Text - Transcription Audio")
+        
+        # Detect system language
+        self.current_language = self.detect_system_language()
+        
+        self.root.title(self.t("window_title"))
         self.root.geometry("1300x900")
         
         # Set minimum window size
@@ -68,35 +143,119 @@ class SpeechToTextGUI:
         
         self.create_widgets()
     
+    def detect_system_language(self):
+        """Detect system language and return 'fr' or 'en'"""
+        try:
+            system_locale = locale.getdefaultlocale()[0]
+            if system_locale:
+                lang_code = system_locale.split('_')[0].lower()
+                if lang_code == 'fr':
+                    return 'fr'
+        except:
+            pass
+        return 'en'  # Default to English
+    
+    def t(self, key):
+        """Get translated text for the current language"""
+        return self.TRANSLATIONS[self.current_language].get(key, key)
+    
+    def change_language(self, lang_code):
+        """Change the GUI language and update all text elements"""
+        self.current_language = lang_code
+        self.update_all_texts()
+    
+    def update_all_texts(self):
+        """Update all text elements in the GUI with current language"""
+        # Update window title
+        self.root.title(self.t("window_title"))
+        
+        # Update all labels and buttons
+        self.title_label.configure(text=f"🎤 {self.t('title')}")
+        self.section1_label.configure(text=self.t("section1"))
+        self.browse_button.configure(text=self.t("browse"))
+        
+        if not self.audio_file:
+            self.file_path_label.configure(text=self.t("no_file"))
+        
+        self.section2_label.configure(text=self.t("section2"))
+        self.lang_label.configure(text=self.t("language"))
+        self.section3_label.configure(text=self.t("section3"))
+        self.transcribe_button.configure(text=self.t("transcribe_btn"))
+        self.open_button.configure(text=self.t("open_result_btn"))
+        self.preview_label.configure(text=self.t("preview"))
+        self.tip_label.configure(text=self.t("tip"))
+        self.timestamps_check.configure(text=self.t("timestamps"))
+        self.chinese_check.configure(text=self.t("chinese_conversion"))
+        self.gui_lang_label.configure(text=self.t("gui_language"))
+        
+        # Update language combo with translated "Auto-detect"
+        current_whisper_lang = self.language_var.get()
+        if current_whisper_lang == "Auto-detect":
+            self.language_var.set(self.t("auto_detect"))
+        
+        # Update status if it shows "Ready"
+        current_status = self.status_label.cget("text")
+        if current_status in ["Prêt", "Ready", "Prêt à transcrire", "Ready to transcribe"]:
+            if self.audio_file:
+                self.status_label.configure(text=self.t("ready_to_transcribe"))
+            else:
+                self.status_label.configure(text=self.t("ready"))
+    
     def create_widgets(self):
         """Create all GUI widgets"""
         # Main container with padding
         main_frame = ctk.CTkFrame(self.root)
         main_frame.pack(fill="both", expand=True, padx=20, pady=20)
         
-        # Title
-        title_label = ctk.CTkLabel(
-            main_frame, 
-            text="🎤 Speech to Text - Transcription Audio",
+        # Header frame with title and language selector
+        header_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        header_frame.pack(fill="x", pady=(0, 20))
+        
+        # Title on the left
+        self.title_label = ctk.CTkLabel(
+            header_frame, 
+            text=f"🎤 {self.t('title')}",
             font=ctk.CTkFont(size=20, weight="bold")
         )
-        title_label.pack(pady=(0, 20))
+        self.title_label.pack(side="left")
+        
+        # Language selector on the right
+        gui_lang_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
+        gui_lang_frame.pack(side="right")
+        
+        self.gui_lang_label = ctk.CTkLabel(
+            gui_lang_frame,
+            text=self.t("gui_language"),
+            font=ctk.CTkFont(size=11)
+        )
+        self.gui_lang_label.pack(side="left", padx=(0, 5))
+        
+        self.gui_language_var = ctk.StringVar(value="Français" if self.current_language == "fr" else "English")
+        self.gui_language_combo = ctk.CTkComboBox(
+            gui_lang_frame,
+            values=["Français", "English"],
+            variable=self.gui_language_var,
+            width=120,
+            state="readonly",
+            command=self.on_gui_language_change
+        )
+        self.gui_language_combo.pack(side="left")
         
         # Section 1: File selection
         file_frame = ctk.CTkFrame(main_frame)
         file_frame.pack(fill="x", pady=10)
         
-        section1_label = ctk.CTkLabel(
+        self.section1_label = ctk.CTkLabel(
             file_frame,
-            text="1. Sélectionner un fichier audio (MP3):",
+            text=self.t("section1"),
             font=ctk.CTkFont(size=14, weight="bold"),
             anchor="w"
         )
-        section1_label.pack(pady=(10, 5), padx=10, anchor="w")
+        self.section1_label.pack(pady=(10, 5), padx=10, anchor="w")
         
         self.browse_button = ctk.CTkButton(
             file_frame,
-            text="Parcourir...",
+            text=self.t("browse"),
             command=self.browse_file,
             width=120
         )
@@ -104,7 +263,7 @@ class SpeechToTextGUI:
         
         self.file_path_label = ctk.CTkLabel(
             file_frame,
-            text="Aucun fichier sélectionné",
+            text=self.t("no_file"),
             text_color="gray",
             anchor="w"
         )
@@ -114,20 +273,21 @@ class SpeechToTextGUI:
         options_frame = ctk.CTkFrame(main_frame)
         options_frame.pack(fill="x", pady=10)
         
-        section2_label = ctk.CTkLabel(
+        self.section2_label = ctk.CTkLabel(
             options_frame,
-            text="2. Options de transcription:",
+            text=self.t("section2"),
             font=ctk.CTkFont(size=14, weight="bold"),
             anchor="w"
         )
-        section2_label.pack(pady=(10, 5), padx=10, anchor="w")
+        self.section2_label.pack(pady=(10, 5), padx=10, anchor="w")
         
         # Language selection
         lang_frame = ctk.CTkFrame(options_frame, fg_color="transparent")
         lang_frame.pack(fill="x", padx=10, pady=5)
         
-        ctk.CTkLabel(lang_frame, text="Langue:", width=100, anchor="w").pack(side="left")
-        self.language_var = ctk.StringVar(value="Auto-detect")
+        self.lang_label = ctk.CTkLabel(lang_frame, text=self.t("language"), width=100, anchor="w")
+        self.lang_label.pack(side="left")
+        self.language_var = ctk.StringVar(value=self.t("auto_detect"))
         self.language_combo = ctk.CTkComboBox(
             lang_frame,
             values=list(self.languages.keys()),
@@ -141,7 +301,7 @@ class SpeechToTextGUI:
         self.timestamps_var = ctk.BooleanVar(value=False)
         self.timestamps_check = ctk.CTkCheckBox(
             options_frame,
-            text="Inclure les timestamps",
+            text=self.t("timestamps"),
             variable=self.timestamps_var
         )
         self.timestamps_check.pack(pady=5, padx=10, anchor="w")
@@ -153,7 +313,7 @@ class SpeechToTextGUI:
         self.chinese_var = ctk.BooleanVar(value=False)
         self.chinese_check = ctk.CTkCheckBox(
             chinese_frame,
-            text="Conversion chinoise:",
+            text=self.t("chinese_conversion"),
             variable=self.chinese_var,
             command=self.update_chinese_options
         )
@@ -173,13 +333,13 @@ class SpeechToTextGUI:
         output_frame = ctk.CTkFrame(main_frame)
         output_frame.pack(fill="x", pady=10)
         
-        section3_label = ctk.CTkLabel(
+        self.section3_label = ctk.CTkLabel(
             output_frame,
-            text="3. Fichier de sortie:",
+            text=self.t("section3"),
             font=ctk.CTkFont(size=14, weight="bold"),
             anchor="w"
         )
-        section3_label.pack(pady=(10, 5), padx=10, anchor="w")
+        self.section3_label.pack(pady=(10, 5), padx=10, anchor="w")
         
         self.output_path_label = ctk.CTkLabel(
             output_frame,
@@ -199,7 +359,7 @@ class SpeechToTextGUI:
         
         self.transcribe_button = ctk.CTkButton(
             button_frame,
-            text="🚀 Transcrire",
+            text=self.t("transcribe_btn"),
             command=self.start_transcription,
             state="disabled",
             width=180,
@@ -210,7 +370,7 @@ class SpeechToTextGUI:
         
         self.open_button = ctk.CTkButton(
             button_frame,
-            text="📄 Ouvrir le résultat",
+            text=self.t("open_result_btn"),
             command=self.open_output_file,
             width=180,
             height=40,
@@ -226,7 +386,7 @@ class SpeechToTextGUI:
         # Status label
         self.status_label = ctk.CTkLabel(
             main_frame,
-            text="Prêt",
+            text=self.t("ready"),
             text_color="lightgreen",
             font=ctk.CTkFont(size=12)
         )
@@ -236,25 +396,30 @@ class SpeechToTextGUI:
         preview_frame = ctk.CTkFrame(main_frame)
         preview_frame.pack(fill="both", expand=True, pady=10)
         
-        preview_label = ctk.CTkLabel(
+        self.preview_label = ctk.CTkLabel(
             preview_frame,
-            text="Aperçu du résultat:",
+            text=self.t("preview"),
             font=ctk.CTkFont(size=14, weight="bold"),
             anchor="w"
         )
-        preview_label.pack(pady=(10, 5), padx=10, anchor="w")
+        self.preview_label.pack(pady=(10, 5), padx=10, anchor="w")
         
         self.result_text = ctk.CTkTextbox(preview_frame, wrap="word", height=120)
         self.result_text.pack(fill="both", expand=True, padx=10, pady=(0, 10))
         
         # Tip
-        tip_label = ctk.CTkLabel(
+        self.tip_label = ctk.CTkLabel(
             main_frame,
-            text="💡 Astuce: Vous pouvez aussi utiliser l'outil en ligne de commande",
+            text=self.t("tip"),
             text_color="gray",
             font=ctk.CTkFont(size=10)
         )
-        tip_label.pack(pady=(10, 0))
+        self.tip_label.pack(pady=(10, 0))
+    
+    def on_gui_language_change(self, choice):
+        """Handle GUI language change from combobox"""
+        lang_code = "fr" if choice == "Français" else "en"
+        self.change_language(lang_code)
     
     def browse_file(self):
         """Open file dialog to select MP3 file"""
@@ -282,7 +447,7 @@ class SpeechToTextGUI:
                 self.show_existing_file_warning()
             else:
                 self.result_text.delete("1.0", "end")
-                self.status_label.configure(text="Prêt à transcrire", text_color="lightgreen")
+                self.status_label.configure(text=self.t("ready_to_transcribe"), text_color="lightgreen")
             
             # Enable transcribe button
             self.transcribe_button.configure(state="normal")
@@ -297,8 +462,7 @@ class SpeechToTextGUI:
     def show_existing_file_warning(self):
         """Display warning and preview for existing transcription file"""
         # Update status with warning
-        warning_msg = f"⚠️ Le fichier existe déjà et sera écrasé lors de la transcription"
-        self.status_label.configure(text=warning_msg, text_color="orange")
+        self.status_label.configure(text=self.t("file_exists_warning"), text_color="orange")
         
         # Load and display existing file content in preview
         try:
@@ -320,7 +484,7 @@ class SpeechToTextGUI:
                 preview = preview_text[:1000] + ("..." if len(preview_text) > 1000 else "")
                 self.update_result_text(preview)
         except Exception as e:
-            self.update_result_text(f"Erreur lors de la lecture du fichier existant: {str(e)}")
+            self.update_result_text(f"{self.t('file_read_error')} {str(e)}")
     
     def load_and_display_transcription(self):
         """Load and display the transcription file in preview"""
@@ -345,16 +509,16 @@ class SpeechToTextGUI:
                 preview = preview_text[:1000] + ("..." if len(preview_text) > 1000 else "")
                 self.update_result_text(preview)
         except Exception as e:
-            self.update_result_text(f"Erreur lors de la lecture du fichier: {str(e)}")
+            self.update_result_text(f"{self.t('file_read_error')} {str(e)}")
     
     def start_transcription(self):
         """Start transcription process"""
         if not self.audio_file:
-            messagebox.showwarning("Attention", "Veuillez sélectionner un fichier audio")
+            messagebox.showwarning(self.t("warning_title"), self.t("select_file_warning"))
             return
         
         if not os.path.exists(self.audio_file):
-            messagebox.showerror("Erreur", "Le fichier sélectionné n'existe pas")
+            messagebox.showerror(self.t("error_title"), self.t("file_not_exist"))
             return
         
         if self.is_processing:
@@ -381,7 +545,11 @@ class SpeechToTextGUI:
             
             # Get options
             language_name = self.language_var.get()
-            language_code = self.languages[language_name]
+            # Handle translated "Auto-detect"
+            if language_name == self.t("auto_detect"):
+                language_code = None
+            else:
+                language_code = self.languages.get(language_name, None)
             include_timestamps = self.timestamps_var.get()
             
             chinese_conversion = None
@@ -403,7 +571,7 @@ class SpeechToTextGUI:
             
             # Success
             self.root.after(0, lambda: self.progress_bar.set(1.0))
-            success_msg = f"✓ Transcription terminée!\nFichier sauvegardé: {os.path.basename(self.output_file)}"
+            success_msg = f"{self.t('transcription_complete')} {os.path.basename(self.output_file)}"
             self.root.after(0, self.update_status, success_msg, "lightgreen", 1.0)
             
             # Display result preview - refresh with new content
@@ -413,7 +581,7 @@ class SpeechToTextGUI:
             # Stop elapsed timer on error
             self.elapsed_timer_active = False
             
-            error_msg = f"❌ Erreur: {str(e)}"
+            error_msg = f"{self.t('error')} {str(e)}"
             self.root.after(0, self.update_status, error_msg, "red", 0.0)
             self.root.after(0, lambda: self.progress_bar.set(0))
         
@@ -453,7 +621,7 @@ class SpeechToTextGUI:
         
         elapsed = time.time() - self.start_time
         elapsed_str = self.format_elapsed_time(elapsed)
-        message = f"Transcription en cours depuis {elapsed_str}..."
+        message = f"{self.t('transcribing')} {elapsed_str}..."
         self.status_label.configure(text=message, text_color="lightblue")
         
         # Schedule next update in 1 second
@@ -465,7 +633,7 @@ class SpeechToTextGUI:
         if os.path.exists(self.output_file):
             os.startfile(self.output_file)
         else:
-            messagebox.showinfo("Information", "Aucun fichier de transcription disponible")
+            messagebox.showinfo(self.t("info_title"), self.t("no_transcription"))
     
     def open_file_location(self):
         """Open file explorer and select the output file"""
@@ -487,8 +655,8 @@ class SpeechToTextGUI:
         else:
             # File doesn't exist yet, show the path that will be created
             messagebox.showinfo(
-                "Fichier à venir", 
-                f"Le fichier sera créé ici après la transcription:\n{self.output_file}"
+                self.t("file_coming"), 
+                f"{self.t('file_will_be_created')}{self.output_file}"
             )
 
 

@@ -182,9 +182,13 @@ class SpeechToTextGUI:
             output_frame,
             text="",
             text_color="gray",
-            anchor="w"
+            anchor="w",
+            cursor="hand2"  # Change cursor to hand on hover
         )
         self.output_path_label.pack(pady=(0, 10), padx=10, anchor="w")
+        
+        # Bind click event to open file location
+        self.output_path_label.bind("<Button-1>", lambda e: self.open_file_location())
         
         # Action buttons
         button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
@@ -263,7 +267,12 @@ class SpeechToTextGUI:
             # Auto-generate output filename
             base_name = os.path.splitext(filename)[0]
             self.output_file = f"{base_name}_transcription.txt"
-            self.output_path_label.configure(text=self.output_file, text_color="white")
+            
+            # Update output path label with clickable styling
+            self.output_path_label.configure(
+                text=self.output_file, 
+                text_color="#3B8ED0"  # Blue color to indicate it's clickable
+            )
             
             # Check if output file already exists
             if os.path.exists(self.output_file):
@@ -418,6 +427,30 @@ class SpeechToTextGUI:
             os.startfile(self.output_file)
         else:
             messagebox.showinfo("Information", "Aucun fichier de transcription disponible")
+    
+    def open_file_location(self):
+        """Open file explorer and select the output file"""
+        if not self.output_file:
+            return
+        
+        if os.path.exists(self.output_file):
+            # Open explorer and select the file (Windows)
+            if os.name == 'nt':  # Windows
+                os.system(f'explorer /select,"{os.path.abspath(self.output_file)}"')
+            elif os.name == 'posix':  # macOS/Linux
+                import platform
+                if platform.system() == 'Darwin':  # macOS
+                    os.system(f'open -R "{self.output_file}"')
+                else:  # Linux
+                    # Open the directory containing the file
+                    directory = os.path.dirname(os.path.abspath(self.output_file))
+                    os.system(f'xdg-open "{directory}"')
+        else:
+            # File doesn't exist yet, show the path that will be created
+            messagebox.showinfo(
+                "Fichier à venir", 
+                f"Le fichier sera créé ici après la transcription:\n{self.output_file}"
+            )
 
 
 def launch_gui():

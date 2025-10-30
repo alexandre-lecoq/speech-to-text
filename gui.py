@@ -91,24 +91,21 @@ class SpeechToTextGUI:
         )
         section1_label.pack(pady=(10, 5), padx=10, anchor="w")
         
-        file_select_frame = ctk.CTkFrame(file_frame, fg_color="transparent")
-        file_select_frame.pack(fill="x", padx=10, pady=(0, 10))
-        
         self.browse_button = ctk.CTkButton(
-            file_select_frame,
+            file_frame,
             text="Parcourir...",
             command=self.browse_file,
             width=120
         )
-        self.browse_button.pack(side="left", padx=(0, 10))
+        self.browse_button.pack(padx=10, pady=(0, 5), anchor="w")
         
         self.file_path_label = ctk.CTkLabel(
-            file_select_frame,
+            file_frame,
             text="Aucun fichier sélectionné",
             text_color="gray",
             anchor="w"
         )
-        self.file_path_label.pack(side="left", fill="x", expand=True)
+        self.file_path_label.pack(padx=10, pady=(0, 10), anchor="w", fill="x")
         
         # Section 2: Options
         options_frame = ctk.CTkFrame(main_frame)

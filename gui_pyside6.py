@@ -553,6 +553,15 @@ class SpeechToTextGUI(QMainWindow):
         tip_font.setPointSize(9)
         self.tip_label.setFont(tip_font)
         main_layout.addWidget(self.tip_label)
+        
+        # Copyright
+        copyright_label = QLabel("© 2025 Alexandre")
+        copyright_label.setStyleSheet("color: #666666;")
+        copyright_label.setAlignment(Qt.AlignLeft)
+        copyright_font = QFont()
+        copyright_font.setPointSize(8)
+        copyright_label.setFont(copyright_font)
+        main_layout.addWidget(copyright_label)
     
     def on_gui_language_change(self, choice):
         """Handle GUI language change from combobox"""

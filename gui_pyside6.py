@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QTimer, Signal, QObject, QSettings
 from PySide6.QtGui import QFont, QCursor
 from speech_to_text import transcribe_audio, write_transcription
+import torch
 
 
 class SignalEmitter(QObject):
@@ -545,23 +546,45 @@ class SpeechToTextGUI(QMainWindow):
         
         main_layout.addWidget(preview_frame, 1)
         
-        # Tip
-        self.tip_label = QLabel(self.t("tip"))
-        self.tip_label.setStyleSheet("color: gray;")
-        self.tip_label.setAlignment(Qt.AlignCenter)
-        tip_font = QFont()
-        tip_font.setPointSize(9)
-        self.tip_label.setFont(tip_font)
-        main_layout.addWidget(self.tip_label)
+        # Bottom bar with copyright, tip, and compute info
+        bottom_layout = QHBoxLayout()
         
-        # Copyright
+        # Copyright on the left
         copyright_label = QLabel("© 2025 Alexandre")
         copyright_label.setStyleSheet("color: #666666;")
         copyright_label.setAlignment(Qt.AlignLeft)
         copyright_font = QFont()
         copyright_font.setPointSize(8)
         copyright_label.setFont(copyright_font)
-        main_layout.addWidget(copyright_label)
+        bottom_layout.addWidget(copyright_label)
+        
+        # Tip in the center
+        self.tip_label = QLabel(self.t("tip"))
+        self.tip_label.setStyleSheet("color: gray;")
+        self.tip_label.setAlignment(Qt.AlignCenter)
+        tip_font = QFont()
+        tip_font.setPointSize(9)
+        self.tip_label.setFont(tip_font)
+        bottom_layout.addWidget(self.tip_label, 1)
+        
+        # Compute device indicator on the right
+        if torch.cuda.is_available():
+            compute_text = "🟢 GPU 😀"
+            compute_tooltip = "Using CUDA GPU"
+        else:
+            compute_text = "🔴 CPU 😐"
+            compute_tooltip = "Using CPU"
+        
+        compute_label = QLabel(compute_text)
+        compute_label.setStyleSheet("color: #888888;")
+        compute_label.setAlignment(Qt.AlignRight)
+        compute_label.setToolTip(compute_tooltip)
+        compute_font = QFont()
+        compute_font.setPointSize(9)
+        compute_label.setFont(compute_font)
+        bottom_layout.addWidget(compute_label)
+        
+        main_layout.addLayout(bottom_layout)
     
     def on_gui_language_change(self, choice):
         """Handle GUI language change from combobox"""

@@ -2,3 +2,4 @@ openai-whisper
 torch
 opencc
 customtkinter
+PySide6

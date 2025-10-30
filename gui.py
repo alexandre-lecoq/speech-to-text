@@ -265,6 +265,13 @@ class SpeechToTextGUI:
             self.output_file = f"{base_name}_transcription.txt"
             self.output_path_label.configure(text=self.output_file, text_color="white")
             
+            # Check if output file already exists
+            if os.path.exists(self.output_file):
+                self.show_existing_file_warning()
+            else:
+                self.result_text.delete("1.0", "end")
+                self.status_label.configure(text="Prêt à transcrire", text_color="lightgreen")
+            
             # Enable transcribe button
             self.transcribe_button.configure(state="normal")
     
@@ -274,6 +281,59 @@ class SpeechToTextGUI:
             self.chinese_combo.configure(state="readonly")
         else:
             self.chinese_combo.configure(state="disabled")
+    
+    def show_existing_file_warning(self):
+        """Display warning and preview for existing transcription file"""
+        # Update status with warning
+        warning_msg = f"⚠️ Le fichier existe déjà et sera écrasé lors de la transcription"
+        self.status_label.configure(text=warning_msg, text_color="orange")
+        
+        # Load and display existing file content in preview
+        try:
+            with open(self.output_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+                # Skip header to show actual transcription in preview
+                lines = content.split('\n')
+                # Find where the actual transcription starts
+                start_idx = 0
+                for i, line in enumerate(lines):
+                    if line.startswith("=" * 80) and i > 5:  # Skip first header
+                        start_idx = i + 2
+                        break
+                
+                # Get transcription content
+                transcription_lines = lines[start_idx:]
+                preview_text = '\n'.join(transcription_lines)
+                
+                preview = preview_text[:1000] + ("..." if len(preview_text) > 1000 else "")
+                self.update_result_text(preview)
+        except Exception as e:
+            self.update_result_text(f"Erreur lors de la lecture du fichier existant: {str(e)}")
+    
+    def load_and_display_transcription(self):
+        """Load and display the transcription file in preview"""
+        if not os.path.exists(self.output_file):
+            return
+        
+        try:
+            with open(self.output_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+                # Skip header to show actual transcription in preview
+                lines = content.split('\n')
+                # Find where the actual transcription starts
+                start_idx = 0
+                for i, line in enumerate(lines):
+                    if line.startswith("=" * 80) and i > 5:  # Skip first header
+                        start_idx = i + 2
+                        break
+                
+                # Get transcription content
+                transcription_lines = lines[start_idx:]
+                preview_text = '\n'.join(transcription_lines)
+                preview = preview_text[:1000] + ("..." if len(preview_text) > 1000 else "")
+                self.update_result_text(preview)
+        except Exception as e:
+            self.update_result_text(f"Erreur lors de la lecture du fichier: {str(e)}")
     
     def start_transcription(self):
         """Start transcription process"""
@@ -324,14 +384,13 @@ class SpeechToTextGUI:
             
             # Success
             self.root.after(0, lambda: self.progress_bar.set(1.0))
-            success_msg = f"✓ Transcription terminée!\nFichier sauvegardé: {self.output_file}"
+            self.root.after(0, lambda: self.progress_label.configure(text="100%"))
+            self.root.after(0, lambda: self.progress_details.configure(text="Terminé!"))
+            success_msg = f"✓ Transcription terminée!\nFichier sauvegardé: {os.path.basename(self.output_file)}"
             self.root.after(0, self.update_status, success_msg, "lightgreen", 1.0)
             
-            # Display result preview
-            with open(self.output_file, 'r', encoding='utf-8') as f:
-                content = f.read()
-                preview = content[:1000] + ("..." if len(content) > 1000 else "")
-                self.root.after(0, self.update_result_text, preview)
+            # Display result preview - refresh with new content
+            self.root.after(0, self.load_and_display_transcription)
             
         except Exception as e:
             error_msg = f"❌ Erreur: {str(e)}"

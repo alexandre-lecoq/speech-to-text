@@ -267,17 +267,17 @@ class SpeechToTextGUI:
         
         # Determine initial language display value
         lang_display = {
-            "fr": "Français",
-            "en": "English",
-            "zh": "简体中文"
+            "fr": "🇫🇷 Français",
+            "en": "🇬🇧 English",
+            "zh": "🇨🇳 简体中文"
         }
         
         self.gui_language_var = ctk.StringVar(value=lang_display[self.current_language])
         self.gui_language_combo = ctk.CTkComboBox(
             gui_lang_frame,
-            values=["Français", "English", "简体中文"],
+            values=["🇫🇷 Français", "🇬🇧 English", "🇨🇳 简体中文"],
             variable=self.gui_language_var,
-            width=120,
+            width=140,
             state="readonly",
             command=self.on_gui_language_change
         )
@@ -461,9 +461,9 @@ class SpeechToTextGUI:
     def on_gui_language_change(self, choice):
         """Handle GUI language change from combobox"""
         lang_map = {
-            "Français": "fr",
-            "English": "en",
-            "简体中文": "zh"
+            "🇫🇷 Français": "fr",
+            "🇬🇧 English": "en",
+            "🇨🇳 简体中文": "zh"
         }
         lang_code = lang_map.get(choice, "en")
         self.change_language(lang_code)

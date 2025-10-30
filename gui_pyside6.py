@@ -45,6 +45,8 @@ class SpeechToTextGUI(QMainWindow):
             "auto_detect": "Auto-detect",
             "timestamps": "Inclure les timestamps",
             "chinese_conversion": "Conversion chinoise:",
+            "chinese_simplified": "Simplifié",
+            "chinese_traditional": "Traditionnel",
             "section3": "3. Fichier de sortie:",
             "transcribe_btn": "🚀 Transcrire",
             "open_result_btn": "📄 Ouvrir le résultat",
@@ -78,6 +80,8 @@ class SpeechToTextGUI(QMainWindow):
             "auto_detect": "Auto-detect",
             "timestamps": "Include timestamps",
             "chinese_conversion": "Chinese conversion:",
+            "chinese_simplified": "Simplified",
+            "chinese_traditional": "Traditional",
             "section3": "3. Output file:",
             "transcribe_btn": "🚀 Transcribe",
             "open_result_btn": "📄 Open result",
@@ -111,6 +115,8 @@ class SpeechToTextGUI(QMainWindow):
             "auto_detect": "自动检测",
             "timestamps": "包含时间戳",
             "chinese_conversion": "中文转换：",
+            "chinese_simplified": "简体",
+            "chinese_traditional": "繁体",
             "section3": "3. 输出文件：",
             "transcribe_btn": "🚀 转录",
             "open_result_btn": "📄 打开结果",
@@ -252,6 +258,12 @@ class SpeechToTextGUI(QMainWindow):
         self.timestamps_check.setText(self.t("timestamps"))
         self.chinese_check.setText(self.t("chinese_conversion"))
         self.gui_lang_label.setText(self.t("gui_language"))
+        
+        # Update Chinese conversion combo box items
+        current_index = self.chinese_combo.currentIndex()
+        self.chinese_combo.clear()
+        self.chinese_combo.addItems([self.t("chinese_simplified"), self.t("chinese_traditional")])
+        self.chinese_combo.setCurrentIndex(current_index)
         
         # Update status if it shows "Ready"
         current_status = self.status_label.text()
@@ -451,7 +463,7 @@ class SpeechToTextGUI(QMainWindow):
         chinese_layout.addWidget(self.chinese_check)
         
         self.chinese_combo = QComboBox()
-        self.chinese_combo.addItems(["Simplified", "Traditional"])
+        self.chinese_combo.addItems([self.t("chinese_simplified"), self.t("chinese_traditional")])
         self.chinese_combo.setFixedWidth(150)
         self.chinese_combo.setEnabled(False)
         chinese_layout.addWidget(self.chinese_combo)
@@ -689,7 +701,11 @@ class SpeechToTextGUI(QMainWindow):
             chinese_conversion = None
             if self.chinese_check.isChecked():
                 chinese_type = self.chinese_combo.currentText()
-                chinese_conversion = "simplified" if chinese_type == "Simplified" else "traditional"
+                # Check against all possible translations
+                if chinese_type in [self.t("chinese_simplified"), "Simplified", "Simplifié", "简体"]:
+                    chinese_conversion = "simplified"
+                else:
+                    chinese_conversion = "traditional"
             
             # Transcribe
             self.signals.progress_update.emit(0.5)

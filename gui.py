@@ -8,6 +8,7 @@ Provides an easy-to-use, modern interface for transcribing MP3 audio files.
 
 import os
 import threading
+import time
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from speech_to_text import transcribe_audio, write_transcription
@@ -29,6 +30,8 @@ class SpeechToTextGUI:
         self.audio_file = ""
         self.output_file = ""
         self.is_processing = False
+        self.start_time = None
+        self.elapsed_timer_active = False
         
         # Languages supported by Whisper
         self.languages = {
@@ -368,8 +371,12 @@ class SpeechToTextGUI:
     def transcribe_thread(self):
         """Run transcription in a separate thread"""
         try:
-            # Update UI
-            self.root.after(0, self.update_status, "Transcription en cours...", "lightblue", 0.3)
+            # Start elapsed time tracking
+            self.start_time = time.time()
+            self.elapsed_timer_active = True
+            
+            # Update UI and start timer
+            self.root.after(0, self.update_elapsed_time)
             self.root.after(0, lambda: self.transcribe_button.configure(state="disabled"))
             
             # Get options
@@ -391,10 +398,11 @@ class SpeechToTextGUI:
             write_transcription(result, self.output_file, self.audio_file, 
                               include_timestamps, chinese_conversion)
             
+            # Stop elapsed timer
+            self.elapsed_timer_active = False
+            
             # Success
             self.root.after(0, lambda: self.progress_bar.set(1.0))
-            self.root.after(0, lambda: self.progress_label.configure(text="100%"))
-            self.root.after(0, lambda: self.progress_details.configure(text="Terminé!"))
             success_msg = f"✓ Transcription terminée!\nFichier sauvegardé: {os.path.basename(self.output_file)}"
             self.root.after(0, self.update_status, success_msg, "lightgreen", 1.0)
             
@@ -402,12 +410,16 @@ class SpeechToTextGUI:
             self.root.after(0, self.load_and_display_transcription)
             
         except Exception as e:
+            # Stop elapsed timer on error
+            self.elapsed_timer_active = False
+            
             error_msg = f"❌ Erreur: {str(e)}"
             self.root.after(0, self.update_status, error_msg, "red", 0.0)
             self.root.after(0, lambda: self.progress_bar.set(0))
         
         finally:
             self.is_processing = False
+            self.start_time = None
             self.root.after(0, lambda: self.transcribe_button.configure(state="normal"))
     
     def update_status(self, message, color, progress):
@@ -420,6 +432,33 @@ class SpeechToTextGUI:
         """Update result text widget"""
         self.result_text.delete("1.0", "end")
         self.result_text.insert("1.0", text)
+    
+    def format_elapsed_time(self, seconds):
+        """Format elapsed time in a readable format"""
+        if seconds < 60:
+            return f"{int(seconds)}s"
+        elif seconds < 3600:
+            minutes = int(seconds // 60)
+            secs = int(seconds % 60)
+            return f"{minutes}m {secs}s"
+        else:
+            hours = int(seconds // 3600)
+            minutes = int((seconds % 3600) // 60)
+            return f"{hours}h {minutes}m"
+    
+    def update_elapsed_time(self):
+        """Update the elapsed time display during transcription"""
+        if not self.elapsed_timer_active or not self.start_time:
+            return
+        
+        elapsed = time.time() - self.start_time
+        elapsed_str = self.format_elapsed_time(elapsed)
+        message = f"Transcription en cours depuis {elapsed_str}..."
+        self.status_label.configure(text=message, text_color="lightblue")
+        
+        # Schedule next update in 1 second
+        if self.elapsed_timer_active:
+            self.root.after(1000, self.update_elapsed_time)
     
     def open_output_file(self):
         """Open the output file in default text editor"""

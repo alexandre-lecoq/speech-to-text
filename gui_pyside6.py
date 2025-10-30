@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
     QLabel, QPushButton, QFileDialog, QComboBox, QCheckBox,
     QTextEdit, QProgressBar, QFrame, QMessageBox
 )
-from PySide6.QtCore import Qt, QTimer, Signal, QObject
+from PySide6.QtCore import Qt, QTimer, Signal, QObject, QSettings
 from PySide6.QtGui import QFont, QCursor
 from speech_to_text import transcribe_audio, write_transcription
 
@@ -138,6 +138,9 @@ class SpeechToTextGUI(QMainWindow):
     def __init__(self):
         super().__init__()
         
+        # Initialize settings to persist preferences across sessions
+        self.settings = QSettings("SpeechToText", "SpeechToTextApp")
+        
         # Detect system language
         self.current_language = self.detect_system_language()
         
@@ -150,6 +153,8 @@ class SpeechToTextGUI(QMainWindow):
         self.is_processing = False
         self.start_time = None
         self.elapsed_timer_active = False
+        # Load last directory from settings
+        self.last_directory = self.settings.value("last_directory", "")  # Remember last directory for file browser
         
         # Signal emitter for thread communication
         self.signals = SignalEmitter()
@@ -546,10 +551,13 @@ class SpeechToTextGUI(QMainWindow):
     
     def browse_file(self):
         """Open file dialog to select MP3 file"""
+        # Use last directory if available, otherwise empty string (current directory)
+        start_dir = self.last_directory if self.last_directory else ""
+        
         filename, _ = QFileDialog.getOpenFileName(
             self,
             "Select audio file",
-            "",
+            start_dir,
             "MP3 Files (*.mp3);;All Files (*.*)"
         )
         
@@ -557,6 +565,10 @@ class SpeechToTextGUI(QMainWindow):
             self.audio_file = filename
             self.file_path_label.setText(filename)
             self.file_path_label.setStyleSheet("color: white;")
+            
+            # Remember the directory for next time and save to settings
+            self.last_directory = os.path.dirname(filename)
+            self.settings.setValue("last_directory", self.last_directory)
             
             # Auto-generate output filename
             base_name = os.path.splitext(filename)[0]

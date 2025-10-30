@@ -83,6 +83,39 @@ class SpeechToTextGUI:
             "file_coming": "Upcoming file",
             "file_will_be_created": "The file will be created here after transcription:\n",
             "gui_language": "Language:",
+        },
+        "zh": {
+            "title": "语音转文字 - 音频转录",
+            "window_title": "语音转文字 - 音频转录",
+            "section1": "1. 选择音频文件（MP3）：",
+            "browse": "浏览...",
+            "no_file": "未选择文件",
+            "section2": "2. 转录选项：",
+            "language": "语言：",
+            "auto_detect": "自动检测",
+            "timestamps": "包含时间戳",
+            "chinese_conversion": "中文转换：",
+            "section3": "3. 输出文件：",
+            "transcribe_btn": "🚀 转录",
+            "open_result_btn": "📄 打开结果",
+            "preview": "结果预览：",
+            "tip": "💡 提示：您也可以使用命令行工具",
+            "ready": "就绪",
+            "ready_to_transcribe": "准备转录",
+            "transcribing": "转录进行中",
+            "transcription_complete": "✓ 转录完成！\n文件已保存：",
+            "error": "❌ 错误：",
+            "warning_title": "警告",
+            "select_file_warning": "请选择音频文件",
+            "error_title": "错误",
+            "file_not_exist": "选择的文件不存在",
+            "info_title": "信息",
+            "no_transcription": "没有可用的转录文件",
+            "file_exists_warning": "⚠️ 文件已存在，转录时将被覆盖",
+            "file_read_error": "读取现有文件时出错：",
+            "file_coming": "即将创建文件",
+            "file_will_be_created": "转录后将在此处创建文件：\n",
+            "gui_language": "语言：",
         }
     }
     
@@ -144,13 +177,15 @@ class SpeechToTextGUI:
         self.create_widgets()
     
     def detect_system_language(self):
-        """Detect system language and return 'fr' or 'en'"""
+        """Detect system language and return 'fr', 'en', or 'zh'"""
         try:
             system_locale = locale.getdefaultlocale()[0]
             if system_locale:
                 lang_code = system_locale.split('_')[0].lower()
                 if lang_code == 'fr':
                     return 'fr'
+                elif lang_code == 'zh':
+                    return 'zh'
         except:
             pass
         return 'en'  # Default to English
@@ -195,7 +230,7 @@ class SpeechToTextGUI:
         
         # Update status if it shows "Ready"
         current_status = self.status_label.cget("text")
-        if current_status in ["Prêt", "Ready", "Prêt à transcrire", "Ready to transcribe"]:
+        if current_status in ["Prêt", "Ready", "就绪", "Prêt à transcrire", "Ready to transcribe", "准备转录"]:
             if self.audio_file:
                 self.status_label.configure(text=self.t("ready_to_transcribe"))
             else:
@@ -230,10 +265,17 @@ class SpeechToTextGUI:
         )
         self.gui_lang_label.pack(side="left", padx=(0, 5))
         
-        self.gui_language_var = ctk.StringVar(value="Français" if self.current_language == "fr" else "English")
+        # Determine initial language display value
+        lang_display = {
+            "fr": "Français",
+            "en": "English",
+            "zh": "简体中文"
+        }
+        
+        self.gui_language_var = ctk.StringVar(value=lang_display[self.current_language])
         self.gui_language_combo = ctk.CTkComboBox(
             gui_lang_frame,
-            values=["Français", "English"],
+            values=["Français", "English", "简体中文"],
             variable=self.gui_language_var,
             width=120,
             state="readonly",
@@ -418,7 +460,12 @@ class SpeechToTextGUI:
     
     def on_gui_language_change(self, choice):
         """Handle GUI language change from combobox"""
-        lang_code = "fr" if choice == "Français" else "en"
+        lang_map = {
+            "Français": "fr",
+            "English": "en",
+            "简体中文": "zh"
+        }
+        lang_code = lang_map.get(choice, "en")
         self.change_language(lang_code)
     
     def browse_file(self):

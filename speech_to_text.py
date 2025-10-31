@@ -9,7 +9,6 @@ It supports Chinese, French, and English languages.
 Usage:
     python speech_to_text.py <mp3_file> [language] [--timestamps] [--chinese=simplified|traditional]
     python speech_to_text.py --gui
-    python speech_to_text.py --guipyside6
     python speech_to_text.py --update-model
     python speech_to_text.py --diagnose
     python speech_to_text.py --list-languages
@@ -19,8 +18,7 @@ Arguments:
     language: Optional Whisper language code or 'auto'.
               Codes: english=en, chinese=zh, french=fr, auto=auto
 
-    --gui: Launch the graphical user interface (CustomTkinter)
-    --guipyside6: Launch the graphical user interface (PySide6)
+    --gui: Launch the graphical user interface
     --timestamps: Include timestamps in output (disabled by default)
     --chinese=simplified|traditional: Convert Chinese output to Simplified or Traditional (only if language is zh)
     --update-model: Download the latest Whisper base model to ./models/base.pt (requires internet)
@@ -29,7 +27,6 @@ Arguments:
 
 Example:
     python speech_to_text.py --gui
-    python speech_to_text.py --guipyside6
     python speech_to_text.py audio.mp3 en
     python speech_to_text.py audio.mp3 auto --timestamps
     python speech_to_text.py --update-model
@@ -246,14 +243,9 @@ def list_languages():
 def main():
     """Main function to handle command line arguments and run transcription"""
     
-    # Option: GUI (CustomTkinter)
+    # Option: GUI
     if len(sys.argv) == 2 and sys.argv[1] == "--gui":
         from gui import launch_gui
-        launch_gui()
-        return
-    # Option: GUI (PySide6)
-    if len(sys.argv) == 2 and sys.argv[1] == "--guipyside6":
-        from gui_pyside6 import launch_gui
         launch_gui()
         return
     # Option: update model
@@ -292,15 +284,14 @@ def main():
     # Check number of arguments: require at least the MP3 file, optional language
     if len(args) < 1 or len(args) > 2:
         print("Error: Invalid number of arguments")
-        print("\nUsage: python speech_to_text.py <mp3_file> [language] [--timestamps] [--chinese=simplified|traditional]\n    python speech_to_text.py --gui\n    python speech_to_text.py --guipyside6\n    python speech_to_text.py --update-model\n    python speech_to_text.py --diagnose\n    python speech_to_text.py --list-languages")
+        print("\nUsage: python speech_to_text.py <mp3_file> [language] [--timestamps] [--chinese=simplified|traditional]\n    python speech_to_text.py --gui\n    python speech_to_text.py --update-model\n    python speech_to_text.py --diagnose\n    python speech_to_text.py --list-languages")
         print("\nArguments:")
         print("  mp3_file: Path to the MP3 file")
         print("  language: Optional Whisper language code or 'auto'")
         print("           Codes: english=en, chinese=zh, french=fr, auto=auto")
         print("  --timestamps: Include timestamps in output (disabled by default)")
         print("  --chinese=simplified|traditional: Convert Chinese output to Simplified or Traditional (only if language is zh)")
-        print("  --gui: Launch the graphical user interface (CustomTkinter)")
-        print("  --guipyside6: Launch the graphical user interface (PySide6)")
+        print("  --gui: Launch the graphical user interface")
         print("  --update-model: Download the latest Whisper base model to ./models/base.pt (requires internet)")
         print("  --diagnose: Print GPU/CUDA/PyTorch/Whisper/model diagnostics and exit")
         print("  --list-languages: Print all supported Whisper language codes and names")
@@ -310,7 +301,6 @@ def main():
         print("  python speech_to_text.py audio.mp3 en")
         print("  python speech_to_text.py audio.mp3 auto --timestamps")
         print("  python speech_to_text.py --gui")
-        print("  python speech_to_text.py --guipyside6")
         print("  python speech_to_text.py --update-model")
         print("  python speech_to_text.py --list-languages")
         sys.exit(1)

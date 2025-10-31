@@ -245,7 +245,7 @@ def main():
     
     # Option: GUI
     if len(sys.argv) == 2 and sys.argv[1] == "--gui":
-        from gui import launch_gui
+        from gui_pyside6 import launch_gui
         launch_gui()
         return
     # Option: update model

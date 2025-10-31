@@ -1,51 +1,57 @@
 # speech-to-text
 
-A simple, cross-platform tool to transcribe MP3 audio to text using OpenAI Whisper, with optional timestamps, offline model support, GPU acceleration when available, and a diagnostics mode. Available as both a command-line tool and a graphical user interface (GUI).
+A simple, cross-platform tool to transcribe MP3 audio to text using OpenAI Whisper, with optional timestamps, offline model support, GPU acceleration when available, and a diagnostics mode. Available as both a command-line tool and a modern graphical user interface (GUI).
 
 ## Features
 
 - Transcribes MP3 audio files to text
-- **Graphical User Interface (GUI)** for easy, visual interaction
+- **Modern GUI** with dark theme and multi-language support
+- **GPU/CPU status indicator** showing real-time hardware acceleration status
 - **Command-line interface** for automation and scripting
 - Language handling:
   - Provide a Whisper language code (e.g., `en`, `fr`, `zh`), or
   - Omit it or use `auto` to auto-detect the language
-  - Optional timestamps per segment (`--timestamps`)
-  - Optional Chinese character conversion (`--chinese=simplified|traditional`)—only if detected language is Chinese; invalid values cause an error and exit
-  - Deterministic output format with file metadata and language info
-  - Uses a local Whisper model file (`./models/base.pt`) for offline use
-  - GPU acceleration if a CUDA-enabled PyTorch is available; falls back to CPU
-  - Diagnostics mode (`--diagnose`) to print environment info and exit
-  - List all supported Whisper languages (`--list-languages`)
+- Optional timestamps per segment (`--timestamps`)
+- Optional Chinese character conversion (`--chinese=simplified|traditional`)—only if detected language is Chinese; invalid values cause an error and exit
+- Deterministic output format with file metadata and language info
+- Uses a local Whisper model file (`./models/base.pt`) for offline use
+- GPU acceleration with CUDA support; falls back to CPU automatically
+- Diagnostics mode (`--diagnose`) to print environment info and exit
+- List all supported Whisper languages (`--list-languages`)
 
 ## Requirements
 
-- Python 3.8+
-- Dependencies from `requirements.txt` (installs Whisper)
-  - PyTorch is required by Whisper and will be installed (CPU by default). For GPU acceleration, install a CUDA-enabled PyTorch build separately following the instructions on pytorch.org.
+- **Python 3.13+**
+- **uv** package manager (recommended) or pip
 
 ## Installation
 
-1) Clone this repository
+### Using uv (Recommended)
+
+uv is a modern, fast Python package manager (10-100x faster than pip).
+
+1) **Install uv**
+
+```powershell
+pip install uv
+# Or: winget install astral-sh.uv
+# Or: scoop install uv
+```
+
+2) **Clone and setup**
 
 ```bash
 git clone https://github.com/alexandre-lecoq/speech-to-text.git
 cd speech-to-text
+uv sync  # Install all dependencies including PyTorch CUDA 13.0
 ```
 
-2) Install dependencies
+3) **Download Whisper model**
 
-```bash
-pip install -r requirements.txt
+```powershell
+uv run speech_to_text.py --update-model
 ```
-
-3) Obtain the Whisper base model file (one-time)
-
 This tool expects a local model at `./models/base.pt`. Fetch it with:
-
-```bash
-python speech_to_text.py --update-model
-```
 
 This downloads the latest Whisper “base” model (requires internet) and saves it to `./models/base.pt` for offline use.
 
@@ -53,72 +59,73 @@ This downloads the latest Whisper “base” model (requires internet) and saves
 
 ### Graphical User Interface (GUI)
 
-Launch the GUI for a visual, easy-to-use interface:
+Launch the modern GUI:
 
-```bash
-python speech_to_text.py --gui
-```
-
-Or run the GUI directly:
-
-```bash
-python gui.py
+```powershell
+uv run speech_to_text.py --gui
+# Or: python speech_to_text.py --gui
 ```
 
 The GUI provides:
+- **Modern dark theme**
+- **Multi-language interface** (🇬🇧,🇫🇷,🇨🇳) with auto-detection
 - **File browser** to select your MP3 audio file
-- **Language selection** dropdown with auto-detect option
+- **Language selection** dropdown with auto-detect
 - **Options** for timestamps and Chinese character conversion
-- **Progress bar** showing transcription status
-- **Result preview** displaying the first 1000 characters
-- **One-click access** to open the generated transcription file
+- **Real-time progress** with elapsed time counter
+- **GPU/CPU indicator** (🟢 GPU 😊 or 🔴 CPU 😐)
+- **Result preview** displaying the transcription
+- **One-click access** to open the generated file
+- **Persistent settings** (remembers last directory)
 
 ### Command-Line Interface
 
 Basic transcription (language auto-detected):
 
-```bash
-python speech_to_text.py <mp3_file>
+```powershell
+uv run speech_to_text.py audio.mp3
+# Or: python speech_to_text.py audio.mp3
 ```
 
 Specify language explicitly (Whisper code):
 
-```bash
-python speech_to_text.py <mp3_file> <language>
+```powershell
+uv run speech_to_text.py audio.mp3 fr
 # Examples: en (English), fr (French), zh (Chinese), auto (auto-detect)
 ```
 
 Include timestamps per segment:
 
-```bash
-python speech_to_text.py <mp3_file> [language] --timestamps
+```powershell
+uv run speech_to_text.py audio.mp3 --timestamps
+uv run speech_to_text.py audio.mp3 en --timestamps
 ```
 
 Convert Chinese output to Simplified or Traditional (only if detected language is Chinese):
 
-```bash
-python speech_to_text.py <mp3_file> [language] --chinese=simplified
-python speech_to_text.py <mp3_file> [language] --chinese=traditional
+```powershell
+uv run speech_to_text.py audio.mp3 zh --chinese=simplified
+uv run speech_to_text.py audio.mp3 zh --chinese=traditional
 ```
 
 > **Note:** If you provide an invalid value for `--chinese` (anything other than `simplified` or `traditional`), the program will print an error and exit.
 
 Update the local model file (requires internet):
 
-```bash
-python speech_to_text.py --update-model
+```powershell
+uv run speech_to_text.py --update-model
 ```
 
 Print a diagnostics report and exit:
 
-```bash
-python speech_to_text.py --diagnose
+```powershell
+uv run speech_to_text.py --diagnose
 ```
 
 List all supported Whisper languages (code and name):
 
-```bash
-python speech_to_text.py --list-languages
+```powershell
+uv run speech_to_text.py --list-languages
 ```
 
 ## Output
@@ -145,18 +152,25 @@ segments: <number_of_segments>
 [...]
 ```
 
-- Without `--timestamps` (default), content is the full transcription text from Whisper (`result['text']`). Whisper may include newlines depending on the audio.
+- Without `--timestamps` (default), content includes one segment per line for better readability.
 
-## GPU acceleration (optional)
+## GPU Acceleration
 
-- If a CUDA-enabled PyTorch is installed and your GPU/driver is compatible, the tool will automatically use `cuda`; otherwise it will fall back to `cpu`. The selected device is printed at runtime.
+- If a CUDA-enabled PyTorch is installed and your GPU/driver is compatible, the tool will automatically use `cuda`; otherwise it falls back to `cpu`.
+- The selected device is printed at runtime and shown in the GUI status bar.
 - To verify your environment, run the diagnostics:
 
-```bash
-python speech_to_text.py --diagnose
+```powershell
+uv run speech_to_text.py --diagnose
 ```
 
-This prints Python/OS info, `nvidia-smi` (if available), `nvcc --version` (if available), PyTorch CUDA status and devices, Whisper version, and whether the local model file is present.
+This prints:
+- Python/OS information
+- `nvidia-smi` output (if available)
+- `nvcc --version` (if available)
+- PyTorch CUDA status and devices
+- Whisper version
+- Local model file status
 
 ## Notes
 
@@ -164,7 +178,7 @@ This prints Python/OS info, `nvidia-smi` (if available), `nvcc --version` (if av
 - The `--chinese` option only works if the detected language is Chinese (`zh`). If used with any other language, it is ignored with a warning. Invalid values for `--chinese` cause an error and exit.
 - The `--list-languages` option prints all supported Whisper language codes and their names, then exits.
 - The `--update-model` command requires internet connectivity. Normal transcription runs with the local `./models/base.pt` file.
-- Windows is supported. The repository includes unit tests and a small French audio sample for end-to-end validation.
+- Windows is fully supported. The repository includes unit tests and sample audio files for validation.
 
 ## License
 

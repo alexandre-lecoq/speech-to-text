@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
     QTextEdit, QProgressBar, QFrame, QMessageBox
 )
 from PySide6.QtCore import Qt, QTimer, Signal, QObject, QSettings
-from PySide6.QtGui import QFont, QCursor
+from PySide6.QtGui import QFont, QCursor, QIcon
 from speech_to_text import transcribe_audio, write_transcription
 import torch
 
@@ -152,6 +152,13 @@ class SpeechToTextGUI(QMainWindow):
         self.current_language = self.detect_system_language()
         
         self.setWindowTitle(self.t("window_title"))
+        
+        # Set window icon
+        try:
+            self.setWindowIcon(QIcon('icon.ico'))
+        except:
+            pass  # Ignore if icon file is not found
+        
         self.setMinimumSize(723, 1050)
         self.resize(1300, 1050)
         

@@ -222,7 +222,7 @@ class SpeechToTextGUI(QMainWindow):
     def detect_system_language(self):
         """Detect system language and return 'fr', 'en', or 'zh'"""
         try:
-            system_locale = locale.getdefaultlocale()[0]
+            system_locale = locale.getlocale()[0]
             if system_locale:
                 lang_code = system_locale.split('_')[0].lower()
                 if lang_code == 'fr':

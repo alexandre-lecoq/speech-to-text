@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Unit tests for speech_to_text.py
+Unit tests for speech_to_text_core.py
 
-Tests the command-line argument parsing and validation logic.
+Tests the core library functions.
 """
 
 import sys
@@ -15,30 +15,30 @@ from unittest.mock import patch, MagicMock
 from datetime import timedelta
 
 
-# Mock whisper module before importing speech_to_text
+# Mock whisper module before importing speech_to_text_core
 sys.modules['whisper'] = MagicMock()
 
 # Now we can import the module
-import speech_to_text
+import speech_to_text_core
 
 
 class TestFormatTimestamp(unittest.TestCase):
     """Test timestamp formatting function"""
     
     def test_zero_seconds(self):
-        result = speech_to_text.format_timestamp(0)
+        result = speech_to_text_core.format_timestamp(0)
         self.assertEqual(result, "00:00:00.000")
     
     def test_one_minute(self):
-        result = speech_to_text.format_timestamp(60)
+        result = speech_to_text_core.format_timestamp(60)
         self.assertEqual(result, "00:01:00.000")
     
     def test_one_hour(self):
-        result = speech_to_text.format_timestamp(3600)
+        result = speech_to_text_core.format_timestamp(3600)
         self.assertEqual(result, "01:00:00.000")
     
     def test_complex_time(self):
-        result = speech_to_text.format_timestamp(3723.456)
+        result = speech_to_text_core.format_timestamp(3723.456)
         self.assertEqual(result, "01:02:03.456")
 
 
@@ -47,16 +47,16 @@ class TestCommandLineValidation(unittest.TestCase):
 
     def test_no_arguments(self):
         """Exits with error when no arguments provided"""
-        with patch.object(sys, 'argv', ['speech_to_text.py']):
+        with patch.object(sys, 'argv', ['speech_to_text_core.py']):
             with self.assertRaises(SystemExit) as cm:
-                speech_to_text.main()
+                speech_to_text_core.main()
             self.assertEqual(cm.exception.code, 1)
 
     def test_nonexistent_file(self):
         """Exits with error when MP3 file doesn't exist"""
-        with patch.object(sys, 'argv', ['speech_to_text.py', 'nonexistent.mp3']):
+        with patch.object(sys, 'argv', ['speech_to_text_core.py', 'nonexistent.mp3']):
             with self.assertRaises(SystemExit) as cm:
-                speech_to_text.main()
+                speech_to_text_core.main()
             self.assertEqual(cm.exception.code, 1)
 
     def test_non_mp3_file(self):
@@ -66,9 +66,9 @@ class TestCommandLineValidation(unittest.TestCase):
             with open(test_file, 'w', encoding='utf-8') as f:
                 f.write('test')
 
-            with patch.object(sys, 'argv', ['speech_to_text.py', test_file]):
+            with patch.object(sys, 'argv', ['speech_to_text_core.py', test_file]):
                 with self.assertRaises(SystemExit) as cm:
-                    speech_to_text.main()
+                    speech_to_text_core.main()
                 self.assertEqual(cm.exception.code, 1)
 
 
@@ -82,12 +82,12 @@ class TestLanguageArgument(unittest.TestCase):
             with open(test_file, 'w', encoding='utf-8') as f:
                 f.write('test')
 
-            with patch('speech_to_text.transcribe_audio') as mock_transcribe, \
-                 patch('speech_to_text.write_transcription') as mock_write:
+            with patch('speech_to_text_cli.transcribe_audio') as mock_transcribe, \
+                 patch('speech_to_text_cli.write_transcription') as mock_write:
                 mock_transcribe.return_value = {'segments': []}
 
-                with patch.object(sys, 'argv', ['speech_to_text.py', test_file]):
-                    speech_to_text.main()
+                with patch.object(sys, 'argv', ['speech_to_text_core.py', test_file]):
+                    speech_to_text_core.main()
 
                 # language_code should be None for auto-detection
                 args, kwargs = mock_transcribe.call_args
@@ -101,12 +101,12 @@ class TestLanguageArgument(unittest.TestCase):
             with open(test_file, 'w', encoding='utf-8') as f:
                 f.write('test')
 
-            with patch('speech_to_text.transcribe_audio') as mock_transcribe, \
-                 patch('speech_to_text.write_transcription') as mock_write:
+            with patch('speech_to_text_cli.transcribe_audio') as mock_transcribe, \
+                 patch('speech_to_text_cli.write_transcription') as mock_write:
                 mock_transcribe.return_value = {'segments': []}
 
-                with patch.object(sys, 'argv', ['speech_to_text.py', test_file, 'auto']):
-                    speech_to_text.main()
+                with patch.object(sys, 'argv', ['speech_to_text_core.py', test_file, 'auto']):
+                    speech_to_text_core.main()
 
                 args, kwargs = mock_transcribe.call_args
                 self.assertEqual(args[0], test_file)
@@ -119,12 +119,12 @@ class TestLanguageArgument(unittest.TestCase):
             with open(test_file, 'w', encoding='utf-8') as f:
                 f.write('test')
 
-            with patch('speech_to_text.transcribe_audio') as mock_transcribe, \
-                 patch('speech_to_text.write_transcription') as mock_write:
+            with patch('speech_to_text_cli.transcribe_audio') as mock_transcribe, \
+                 patch('speech_to_text_cli.write_transcription') as mock_write:
                 mock_transcribe.return_value = {'segments': []}
 
-                with patch.object(sys, 'argv', ['speech_to_text.py', test_file, 'fr']):
-                    speech_to_text.main()
+                with patch.object(sys, 'argv', ['speech_to_text_core.py', test_file, 'fr']):
+                    speech_to_text_core.main()
 
                 args, kwargs = mock_transcribe.call_args
                 self.assertEqual(args[0], test_file)
@@ -154,7 +154,7 @@ class TestTranscriptionOutput(unittest.TestCase):
 
             # Output file (test with timestamps enabled)
             out_path = os.path.join(tmpdir, 'out.txt')
-            speech_to_text.write_transcription(result, out_path, audio_path, include_timestamps=True)
+            speech_to_text_core.write_transcription(result, out_path, audio_path, include_timestamps=True)
 
             # Read and check output
             with open(out_path, 'r', encoding='utf-8') as f:
@@ -199,7 +199,7 @@ class TestTranscriptionOutput(unittest.TestCase):
 
             # Output file (default: no timestamps)
             out_path = os.path.join(tmpdir, 'out.txt')
-            speech_to_text.write_transcription(result, out_path, audio_path)
+            speech_to_text_core.write_transcription(result, out_path, audio_path)
 
             # Read and check output
             with open(out_path, 'r', encoding='utf-8') as f:
@@ -240,10 +240,10 @@ class TestTranscriptionOutput(unittest.TestCase):
             
             try:
                 # Perform actual transcription (end-to-end test)
-                result = speech_to_text.transcribe_audio(audio_file, 'fr')
+                result = speech_to_text_core.transcribe_audio(audio_file, 'fr')
                 
                 # Write transcription to file
-                speech_to_text.write_transcription(result, output_file, audio_file)
+                speech_to_text_core.write_transcription(result, output_file, audio_file)
                 
                 # Read the transcription output
                 with open(output_file, 'r', encoding='utf-8') as f:
@@ -266,10 +266,10 @@ class TestDiagnoseOption(unittest.TestCase):
 
     def test_diagnose_exits_and_prints(self):
         buf = io.StringIO()
-        with patch.object(sys, 'argv', ['speech_to_text.py', '--diagnose']):
+        with patch.object(sys, 'argv', ['speech_to_text_core.py', '--diagnose']):
             with self.assertRaises(SystemExit) as cm:
                 with redirect_stdout(buf):
-                    speech_to_text.main()
+                    speech_to_text_core.main()
         self.assertEqual(cm.exception.code, 0)
         output = buf.getvalue()
         self.assertIn('Speech-to-Text Diagnostics', output)

@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QTimer, Signal, QObject, QSettings
 from PySide6.QtGui import QFont, QCursor, QIcon
-from speech_to_text import transcribe_audio, write_transcription
+from speech_to_text_core import transcribe_audio, write_transcription
 import torch
 
 
@@ -890,14 +890,20 @@ class SpeechToTextGUI(QMainWindow):
             )
 
 
-def launch_gui():
+def main():
     """Launch the GUI application"""
     import sys
+    
+    # Import GUI components
+    from PySide6.QtWidgets import QApplication
+    
+    # Create and launch GUI
     app = QApplication(sys.argv)
     window = SpeechToTextGUI()
     window.show()
+    
     sys.exit(app.exec())
 
 
 if __name__ == "__main__":
-    launch_gui()
+    main()

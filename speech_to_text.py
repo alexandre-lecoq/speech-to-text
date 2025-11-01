@@ -6,10 +6,10 @@ This module provides the command-line interface for the speech-to-text tool.
 It handles argument parsing and user interaction for CLI usage.
 
 Usage:
-    python speech_to_text_cli.py <mp3_file> [language] [--timestamps] [--chinese=simplified|traditional]
-    python speech_to_text_cli.py --update-model
-    python speech_to_text_cli.py --diagnose
-    python speech_to_text_cli.py --list-languages
+    python speech_to_text.py <mp3_file> [language] [--timestamps] [--chinese=simplified|traditional]
+    python speech_to_text.py --update-model
+    python speech_to_text.py --diagnose
+    python speech_to_text.py --list-languages
 
 Arguments:
     mp3_file: Path to the MP3 file to transcribe
@@ -23,10 +23,10 @@ Arguments:
     --list-languages: Print all supported Whisper language codes and names
 
 Example:
-    python speech_to_text_cli.py audio.mp3 en
-    python speech_to_text_cli.py audio.mp3 auto --timestamps
-    python speech_to_text_cli.py --update-model
-    python speech_to_text_cli.py --diagnose
+    python speech_to_text.py audio.mp3 en
+    python speech_to_text.py audio.mp3 auto --timestamps
+    python speech_to_text.py --update-model
+    python speech_to_text.py --diagnose
 """
 
 import sys
@@ -73,10 +73,10 @@ def main():
     # Check number of arguments: require at least the MP3 file, optional language
     if len(args) < 1 or len(args) > 2:
         print("Error: Invalid number of arguments")
-        print("\nUsage: python speech_to_text_cli.py <mp3_file> [language] [--timestamps] [--chinese=simplified|traditional]")
-        print("       python speech_to_text_cli.py --update-model")
-        print("       python speech_to_text_cli.py --diagnose")
-        print("       python speech_to_text_cli.py --list-languages")
+        print("\nUsage: python speech_to_text.py <mp3_file> [language] [--timestamps] [--chinese=simplified|traditional]")
+        print("       python speech_to_text.py --update-model")
+        print("       python speech_to_text.py --diagnose")
+        print("       python speech_to_text.py --list-languages")
         print("\nArguments:")
         print("  mp3_file: Path to the MP3 file")
         print("  language: Optional Whisper language code or 'auto'")
@@ -87,12 +87,12 @@ def main():
         print("  --diagnose: Print GPU/CUDA/PyTorch/Whisper/model diagnostics and exit")
         print("  --list-languages: Print all supported Whisper language codes and names")
         print("\nExamples:")
-        print("  python speech_to_text_cli.py audio.mp3 zh --chinese=simplified")
-        print("  python speech_to_text_cli.py audio.mp3 zh --chinese=traditional --timestamps")
-        print("  python speech_to_text_cli.py audio.mp3 en")
-        print("  python speech_to_text_cli.py audio.mp3 auto --timestamps")
-        print("  python speech_to_text_cli.py --update-model")
-        print("  python speech_to_text_cli.py --list-languages")
+        print("  python speech_to_text.py audio.mp3 zh --chinese=simplified")
+        print("  python speech_to_text.py audio.mp3 zh --chinese=traditional --timestamps")
+        print("  python speech_to_text.py audio.mp3 en")
+        print("  python speech_to_text.py audio.mp3 auto --timestamps")
+        print("  python speech_to_text.py --update-model")
+        print("  python speech_to_text.py --list-languages")
         sys.exit(1)
 
     audio_file = args[0]

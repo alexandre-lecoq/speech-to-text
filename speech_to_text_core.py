@@ -6,7 +6,7 @@ This module provides the core functionality for converting MP3 audio files to te
 with timestamps. It supports Chinese, French, and English languages.
 
 This is a library module meant to be imported by CLI and GUI applications.
-For command-line usage, use speech_to_text_cli.py
+For command-line usage, use speech_to_text.py
 For graphical interface, use speech_to_text_gui.py
 """
 

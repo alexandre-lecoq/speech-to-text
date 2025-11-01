@@ -82,8 +82,8 @@ class TestLanguageArgument(unittest.TestCase):
             with open(test_file, 'w', encoding='utf-8') as f:
                 f.write('test')
 
-            with patch('speech_to_text_cli.transcribe_audio') as mock_transcribe, \
-                 patch('speech_to_text_cli.write_transcription') as mock_write:
+            with patch('speech_to_text.transcribe_audio') as mock_transcribe, \
+                 patch('speech_to_text.write_transcription') as mock_write:
                 mock_transcribe.return_value = {'segments': []}
 
                 with patch.object(sys, 'argv', ['speech_to_text_core.py', test_file]):
@@ -101,8 +101,8 @@ class TestLanguageArgument(unittest.TestCase):
             with open(test_file, 'w', encoding='utf-8') as f:
                 f.write('test')
 
-            with patch('speech_to_text_cli.transcribe_audio') as mock_transcribe, \
-                 patch('speech_to_text_cli.write_transcription') as mock_write:
+            with patch('speech_to_text.transcribe_audio') as mock_transcribe, \
+                 patch('speech_to_text.write_transcription') as mock_write:
                 mock_transcribe.return_value = {'segments': []}
 
                 with patch.object(sys, 'argv', ['speech_to_text_core.py', test_file, 'auto']):
@@ -119,8 +119,8 @@ class TestLanguageArgument(unittest.TestCase):
             with open(test_file, 'w', encoding='utf-8') as f:
                 f.write('test')
 
-            with patch('speech_to_text_cli.transcribe_audio') as mock_transcribe, \
-                 patch('speech_to_text_cli.write_transcription') as mock_write:
+            with patch('speech_to_text.transcribe_audio') as mock_transcribe, \
+                 patch('speech_to_text.write_transcription') as mock_write:
                 mock_transcribe.return_value = {'segments': []}
 
                 with patch.object(sys, 'argv', ['speech_to_text_core.py', test_file, 'fr']):

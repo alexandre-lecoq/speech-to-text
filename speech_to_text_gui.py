@@ -10,6 +10,8 @@ import os
 import threading
 import time
 import locale
+import sys
+
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QFileDialog, QComboBox, QCheckBox,
@@ -17,8 +19,6 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QTimer, Signal, QObject, QSettings
 from PySide6.QtGui import QFont, QCursor, QIcon
-from speech_to_text_core import transcribe_audio, write_transcription
-import torch
 
 
 class SignalEmitter(QObject):
@@ -167,6 +167,7 @@ class SpeechToTextGUI(QMainWindow):
         self.is_processing = False
         self.start_time = None
         self.elapsed_timer_active = False
+        self.gpu_status_label = None  # Reference to GPU status label for background update
         # Load last directory from settings
         self.last_directory = self.settings.value("last_directory", "")  # Remember last directory for file browser
         
@@ -218,6 +219,34 @@ class SpeechToTextGUI(QMainWindow):
         
         self.create_widgets()
         self.apply_dark_theme()
+        
+        # Start GPU detection in background (non-blocking)
+        self.detect_gpu_in_background()
+    
+    def detect_gpu_in_background(self):
+        """Detect GPU availability in background thread (non-blocking). It makes the GUI more responsive on startup."""
+        def detect_gpu():
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    compute_text = "🟢 GPU 😀"
+                    compute_tooltip = "Using CUDA GPU"
+                else:
+                    compute_text = "🔴 CPU 😐"
+                    compute_tooltip = "Using CPU"
+                
+                # Update label from background thread
+                if self.gpu_status_label:
+                    self.gpu_status_label.setText(compute_text)
+                    self.gpu_status_label.setToolTip(compute_tooltip)
+            except Exception as e:
+                if self.gpu_status_label:
+                    self.gpu_status_label.setText("⚠️ GPU ?")
+                    self.gpu_status_label.setToolTip(f"Detection error: {str(e)}")
+        
+        # Run detection in daemon thread (non-blocking)
+        thread = threading.Thread(target=detect_gpu, daemon=True)
+        thread.start()
     
     def detect_system_language(self):
         """Detect system language and return 'fr', 'en', or 'zh'"""
@@ -574,25 +603,18 @@ class SpeechToTextGUI(QMainWindow):
         self.tip_label.setFont(tip_font)
         bottom_layout.addWidget(self.tip_label, 1)
         
-        # Compute device indicator on the right
-        if torch.cuda.is_available():
-            compute_text = "🟢 GPU 😀"
-            compute_tooltip = "Using CUDA GPU"
-        else:
-            compute_text = "🔴 CPU 😐"
-            compute_tooltip = "Using CPU"
-        
-        compute_label = QLabel(compute_text)
-        compute_label.setStyleSheet("color: #888888;")
-        compute_label.setAlignment(Qt.AlignRight)
-        compute_label.setToolTip(compute_tooltip)
+        # GPU indicator on the right (initial state while detecting)
+        self.gpu_status_label = QLabel("⚪ GPU ?")
+        self.gpu_status_label.setStyleSheet("color: #888888;")
+        self.gpu_status_label.setAlignment(Qt.AlignRight)
+        self.gpu_status_label.setToolTip("Detecting...")
         compute_font = QFont()
         compute_font.setPointSize(9)
-        compute_label.setFont(compute_font)
-        bottom_layout.addWidget(compute_label)
+        self.gpu_status_label.setFont(compute_font)
+        bottom_layout.addWidget(self.gpu_status_label)
         
         main_layout.addLayout(bottom_layout)
-    
+
     def on_gui_language_change(self, choice):
         """Handle GUI language change from combobox"""
         lang_map = {
@@ -763,7 +785,10 @@ class SpeechToTextGUI(QMainWindow):
                     chinese_conversion = "simplified"
                 else:
                     chinese_conversion = "traditional"
-            
+
+            # Import transcription functions here to avoid blocking UI            
+            from speech_to_text_core import transcribe_audio, write_transcription
+
             # Transcribe
             self.signals.progress_update.emit(0.5)
             result = transcribe_audio(self.audio_file, language_code)
@@ -892,12 +917,6 @@ class SpeechToTextGUI(QMainWindow):
 
 def main():
     """Launch the GUI application"""
-    import sys
-    
-    # Import GUI components
-    from PySide6.QtWidgets import QApplication
-    
-    # Create and launch GUI
     app = QApplication(sys.argv)
     window = SpeechToTextGUI()
     window.show()

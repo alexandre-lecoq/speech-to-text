@@ -18,9 +18,6 @@ from datetime import timedelta
 import platform
 import subprocess
 import shutil
-import torch
-import whisper
-from opencc import OpenCC
 
 
 def format_timestamp(seconds):
@@ -45,6 +42,8 @@ def transcribe_audio(audio_file, language_code=None):
         Transcription result with segments
     """
     # Check for GPU availability
+    import torch
+    import whisper    
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
     print(f"Loading Whisper model from ./models/base.pt ...")
@@ -90,6 +89,7 @@ def write_transcription(result, output_file, audio_file, include_timestamps=Fals
     detected_lang = result.get('language')
     if chinese_conversion:
         if detected_lang == 'zh':
+            from opencc import OpenCC
             print(f"Converting Chinese output to: {chinese_conversion}")
             cc = OpenCC('t2s' if chinese_conversion == 'simplified' else 's2t')
         else:
@@ -154,6 +154,7 @@ def diagnose():
         print(f"\n[nvcc] Not available: {e}")
 
     try:
+        import torch
         print("\n[PyTorch]")
         print(f"  Version: {torch.__version__}")
         print(f"  CUDA available: {torch.cuda.is_available()}")
@@ -170,6 +171,7 @@ def diagnose():
 
     # Whisper
     try:
+        import whisper
         print("\n[Whisper]")
         print(f"  Version: {whisper.__version__ if hasattr(whisper, '__version__') else 'unknown'}")
     except Exception as e:
@@ -196,6 +198,7 @@ def update_model():
     """
     Download the latest Whisper base model and save to ./models/base.pt
     """
+    import whisper
     print("Downloading latest Whisper base model (requires internet)...")
     model = whisper.load_model("base")
     # Find the cached model file
@@ -211,6 +214,7 @@ def update_model():
 
 def list_languages():
     """Print all supported Whisper language codes and names, then exit."""
+    import whisper
     langs = whisper.tokenizer.LANGUAGES
     print("Supported Whisper languages:")
     for code, name in sorted(langs.items()):

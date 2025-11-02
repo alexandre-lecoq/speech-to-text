@@ -31,7 +31,6 @@ Example:
 
 import sys
 import os
-from speech_to_text_core import transcribe_audio, write_transcription, diagnose, update_model, list_languages
 
 
 def main():
@@ -39,14 +38,17 @@ def main():
     
     # Option: update model
     if len(sys.argv) == 2 and sys.argv[1] == "--update-model":
+        from speech_to_text_core import update_model
         update_model()
         return
     # Option: diagnose
     if len(sys.argv) == 2 and sys.argv[1] == "--diagnose":
+        from speech_to_text_core import diagnose
         diagnose()
         return
     # Option: list languages
     if len(sys.argv) == 2 and sys.argv[1] == "--list-languages":
+        from speech_to_text_core import list_languages
         list_languages()
         return
 
@@ -117,6 +119,8 @@ def main():
     output_file = f"{base_name}_transcription.txt"
 
     try:
+        # Import here to avoid unnecessary dependency if just diagnosing or updating model
+        from speech_to_text_core import transcribe_audio, write_transcription
         # Transcribe audio
         result = transcribe_audio(audio_file, language_code)
         # Write transcription to file

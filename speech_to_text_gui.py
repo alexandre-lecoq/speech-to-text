@@ -805,12 +805,16 @@ class SpeechToTextGUI(QMainWindow):
             # Import transcription functions here to avoid blocking UI            
             from speech_to_text_core import transcribe_audio, write_transcription
 
-            # Transcribe
-            self.signals.progress_update.emit(0.5)
-            result = transcribe_audio(self.audio_file, language_code)
+            # Callback pour mettre à jour la barre de progression en temps réel
+            def on_progress(current, total, percentage):
+                scaled_percentage = percentage / 100.0 * 0.9
+                self.signals.progress_update.emit(scaled_percentage)
+            
+            # Transcribe avec callback de progression
+            result = transcribe_audio(self.audio_file, language_code, progress_callback=on_progress)
             
             # Write output
-            self.signals.progress_update.emit(0.8)
+            self.signals.progress_update.emit(0.9)
             write_transcription(result, self.output_file, self.audio_file, 
                               include_timestamps, chinese_conversion)
             

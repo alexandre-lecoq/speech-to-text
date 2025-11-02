@@ -35,31 +35,63 @@ def format_timestamp(seconds):
     return f"{hours:02d}:{minutes:02d}:{secs:02d}.{milliseconds:03d}"
 
 
-def transcribe_audio(audio_file, language_code=None):
+def transcribe_audio(audio_file, language_code=None, progress_callback=None):
     """
     Transcribe audio file using Whisper model
     
     Args:
         audio_file: Path to the audio file
-    language_code: Language code for the audio. If None, auto-detect.
+        language_code: Language code for the audio. If None, auto-detect.
+        progress_callback: Optional callback(current, total, percentage) for progress updates
     
     Returns:
         Transcription result with segments
     """
     # Check for GPU availability
     import torch
-    import whisper    
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"Using device: {device}")
-    print(f"Loading Whisper model from ./models/base.pt ...")
-    model = whisper.load_model("./models/base.pt", device=device)
-    print(f"Transcribing audio file: {audio_file}")
-    print(f"Language: {language_code if language_code else 'auto-detect'}")
-    kwargs = {"verbose": False}
-    if language_code:
-        kwargs["language"] = language_code
-    result = model.transcribe(audio_file, **kwargs)
-    return result
+    import whisper
+    
+    # Monkey-patch tqdm si callback fourni
+    original_tqdm = None
+    if progress_callback:
+        import tqdm
+        original_tqdm = tqdm.tqdm
+        
+        class CallbackTqdm(original_tqdm):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self._callback = progress_callback
+                
+            def update(self, n=1):
+                super().update(n)
+                # Appeler le callback avec la progression actuelle
+                if self._callback and self.total:
+                    percentage = (self.n / self.total) * 100
+                    self._callback(self.n, self.total, percentage)
+        
+        # Remplacer temporairement tqdm
+        tqdm.tqdm = CallbackTqdm
+    
+    try:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        print(f"Using device: {device}")
+        print(f"Loading Whisper model from ./models/base.pt ...")
+        model = whisper.load_model("./models/base.pt", device=device)
+        print(f"Transcribing audio file: {audio_file}")
+        print(f"Language: {language_code if language_code else 'auto-detect'}")
+        
+        kwargs = {"verbose": False}  # False pour activer tqdm
+        if language_code:
+            kwargs["language"] = language_code
+        
+        result = model.transcribe(audio_file, **kwargs)
+        return result
+        
+    finally:
+        # Restaurer tqdm original
+        if original_tqdm is not None:
+            import tqdm
+            tqdm.tqdm = original_tqdm
 
 
 def write_transcription(result, output_file, audio_file, include_timestamps=False, chinese_conversion=None):

@@ -145,6 +145,9 @@ class SpeechToTextGUI(QMainWindow):
     def __init__(self):
         super().__init__()
         
+        # Preload heavy modules in background immediately (non-blocking)
+        self.preload_modules_in_background()
+        
         # Initialize settings to persist preferences across sessions
         self.settings = QSettings("SpeechToText", "SpeechToTextApp")
         
@@ -246,6 +249,19 @@ class SpeechToTextGUI(QMainWindow):
         
         # Run detection in daemon thread (non-blocking)
         thread = threading.Thread(target=detect_gpu, daemon=True)
+        thread.start()
+    
+    def preload_modules_in_background(self):
+        """Preload heavy external modules in background to speed up later usage"""
+        def preload():
+            try:
+                from speech_to_text_core import preload_external_modules
+                preload_external_modules()
+            except Exception as e:
+                print(f"Warning: Failed to preload modules: {e}")
+        
+        # Run preloading in daemon thread (non-blocking)
+        thread = threading.Thread(target=preload, daemon=True)
         thread.start()
     
     def detect_system_language(self):

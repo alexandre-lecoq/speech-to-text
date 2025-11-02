@@ -19,6 +19,11 @@ import platform
 import subprocess
 import shutil
 
+def preload_external_modules():
+    """Preload external modules to avoid import issues later."""
+    import torch
+    import whisper
+    from opencc import OpenCC
 
 def format_timestamp(seconds):
     """Convert seconds to HH:MM:SS.mmm format"""

@@ -80,9 +80,20 @@ def transcribe_audio(audio_file, language_code=None, progress_callback=None):
         print(f"Transcribing audio file: {audio_file}")
         print(f"Language: {language_code if language_code else 'auto-detect'}")
         
+        # Préparer le prompt initial avec le nom de fichier nettoyé
+        import re
+        filename_only = os.path.splitext(os.path.basename(audio_file))[0]
+        # Nettoyer: remplacer underscores/tirets par espaces, supprimer caractères spéciaux
+        cleaned_name = re.sub(r'[_-]+', ' ', filename_only)
+        cleaned_name = re.sub(r'[^\w\s]', ' ', cleaned_name)
+        cleaned_name = ' '.join(cleaned_name.split())  # Normaliser les espaces
+        print(f"Initial prompt: {cleaned_name}")
+        
         kwargs = {"verbose": False}  # False pour activer tqdm
         if language_code:
             kwargs["language"] = language_code
+        if cleaned_name:
+            kwargs["initial_prompt"] = cleaned_name
         
         result = model.transcribe(audio_file, **kwargs)
         return result

@@ -244,7 +244,7 @@ class SpeechToTextGUI(QMainWindow):
                     self.gpu_status_label.setToolTip(compute_tooltip)
             except Exception as e:
                 if self.gpu_status_label:
-                    self.gpu_status_label.setText("⚠️ GPU ?")
+                    self.gpu_status_label.setText("⚠️ GPU 🤔")
                     self.gpu_status_label.setToolTip(f"Detection error: {str(e)}")
         
         # Run detection in daemon thread (non-blocking)
@@ -620,7 +620,7 @@ class SpeechToTextGUI(QMainWindow):
         bottom_layout.addWidget(self.tip_label, 1)
         
         # GPU indicator on the right (initial state while detecting)
-        self.gpu_status_label = QLabel("⚪ GPU ?")
+        self.gpu_status_label = QLabel("⚪ GPU 🤔")
         self.gpu_status_label.setStyleSheet("color: #888888;")
         self.gpu_status_label.setAlignment(Qt.AlignRight)
         self.gpu_status_label.setToolTip("Detecting...")

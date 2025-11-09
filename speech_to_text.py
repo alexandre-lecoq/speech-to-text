@@ -29,6 +29,7 @@ Example:
     python speech_to_text.py --diagnose
 """
 
+from PySide6.QtWidgets import QApplication # Added to fix import issues reporting as c10.dll failing to load, idealy would be removed if works without it.
 import sys
 import os
 

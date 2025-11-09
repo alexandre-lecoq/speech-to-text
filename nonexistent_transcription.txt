@@ -1,0 +1,7 @@
+filename: nonexistent.mp3
+file_size: 0 bytes
+sha1: 
+
+language: <MagicMock name='mock.load_model().transcribe().get()' id='1481481287200'>
+segments: 0
+

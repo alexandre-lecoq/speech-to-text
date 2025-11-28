@@ -33,7 +33,6 @@ a_cli = Analysis(
     pathex=[],                          # Chemins additionnels (vide = sys.path)
     binaries=[],                        # Binaires additionnels (.dll, .so)
     datas=[
-        ('models', 'models'),           # Dossier models à inclure
         (str(whisper_assets), 'whisper/assets'),  # ✅ Assets whisper (mel_filters.npz, etc.)
     ],
     hiddenimports=['whisper'],          # Imports non détectés (forcer whisper)
@@ -102,7 +101,6 @@ a_gui = Analysis(
     pathex=[],
     binaries=[],
     datas=[
-        ('models', 'models'),           # Dossier models à inclure
         (str(whisper_assets), 'whisper/assets'),  # ✅ Assets whisper
     ],
     hiddenimports=['whisper'],          # Forcer l'inclusion de whisper
@@ -168,6 +166,7 @@ exe_gui = EXE(
 # Un seul COLLECT pour partager les DLLs communes (torch, whisper, etc.)
 # Les deux .exe seront dans le même dossier dist/SpeechToText/
 # avec un seul _internal/ partagé
+
 coll = COLLECT(
     exe_cli,                            # Premier exécutable (CLI)
     a_cli.binaries,
@@ -187,3 +186,23 @@ coll = COLLECT(
     ],
     name='SpeechToText',                # Nom du dossier dist/SpeechToText/
 )
+
+# ============================================================================
+# POST-BUILD: Copier le modèle Whisper à la racine du dossier dist
+# ============================================================================
+# PyInstaller place tous les datas dans _internal/, mais nous voulons
+# le dossier models/ à la racine à côté des .exe
+import shutil
+from pathlib import Path
+
+dist_dir = Path('dist') / 'SpeechToText'
+models_src = Path('models')
+models_dst = dist_dir / 'models'
+
+if dist_dir.exists() and models_src.exists():
+    # Supprimer l'ancien dossier models s'il existe
+    if models_dst.exists():
+        shutil.rmtree(models_dst)
+    # Copier le dossier models à la racine
+    shutil.copytree(models_src, models_dst)
+    print(f"✅ Modèle Whisper copié: {models_dst}")
